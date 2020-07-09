@@ -2,10 +2,12 @@ use uuid::Uuid;
 use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 
+pub type ObjectID = u64;
+
 #[derive(Debug)]
 #[derive(Default)]
 pub struct Object {
-    pub uuid: Uuid,
+    pub uuid: ObjectID,
     pub hash: u64,
     pub size: u64,
     pub data: Option<Vec<u8>>

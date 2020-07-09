@@ -25,16 +25,15 @@ impl SQLiteKeyStore {
             ("uuid", "TEXT PRIMARY KEY"),
             ("hash", "UNSIGNED BIG INT"),
             ("size", "UNSIGNED BIG INT"),
-            ("data", "BLOB")
         ]);
         
         ks
     }
 
     pub fn create_table(&mut self, name: &str, fields: Vec<(&str, &str)>) -> Result<()> {
-        let mut s = String::from(format!("CREATE TABLE {} ( \n )", name));
+        let mut s: String = format!("CREATE TABLE {} ( \n )", name);
         for (field, field_type) in fields {
-            s.push(format!("{} {},\n", field, field_type));
+            s.push_str(format!("{} {},\n", field, field_type).as_str());
         }
         self.dbconn.execute(s.as_str(), params![]);
         Ok(())
