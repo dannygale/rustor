@@ -63,7 +63,7 @@ impl FileStore {
     }
 
 
-    fn write_index(&self, idx: &Index) -> Result<(), Box<Error>> {
+    fn write_index(&self, idx: &Index) -> Result<(), Error> {
         println!("Writing index at {}", self.index_path.to_str().unwrap());
         let mut idxfile = OpenOptions::new()
             .write(true)
@@ -162,11 +162,12 @@ impl ObjectStore for FileStore {
         // zero-out data in data file
         let mut f = OpenOptions::new().write(true).open(&self.data_path)?;
         f.seek(SeekFrom::Start(key.offset))?;
-        f.write(&vec![0; key.size as usize]);
+        f.write(&vec![0; key.size as usize])?;
 
         // persist the change in the index
-        self.write_index(&idx);
+        self.write_index(&idx)?;
 
         Ok(())
     }
 }
+

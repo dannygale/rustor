@@ -7,6 +7,7 @@ use crate::object::Object;
 pub trait KeyStore {
     fn store(self, object: &Object) -> Result<Object>;
     fn retrieve(self, uuid: Uuid) -> Result<Object>;
+    fn delete(&mut self, uuid: Uuid) -> Result<()>;
 }
 
 pub struct SQLiteKeyStore {
