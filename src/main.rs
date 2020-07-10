@@ -37,8 +37,8 @@ fn main() -> io::Result<()> {
     let data = fs.get(uuid).unwrap().unwrap();
     println!("get returned {} bytes: {}", data.len(), String::from_utf8(data).unwrap());
 
-    fs.delete(uuid).unwrap();
-    println!("deleted {}", uuid);
+    //fs.delete(uuid).unwrap();
+    //println!("deleted {}", uuid);
 
     let data = fs.get(uuid).unwrap().unwrap();
 

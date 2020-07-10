@@ -12,3 +12,4 @@ fn run_test<T>(test: T) -> ()
 
     assert!(result.is_ok());
 }
+

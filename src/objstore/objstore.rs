@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use std::io::Error;
 
-pub type ObjectID = u64;
+pub type ObjectID = Uuid;
 
 pub trait ObjectStore {
     fn put(&mut self, data: &[u8]) -> Result<ObjectID, Error>;

@@ -2,7 +2,7 @@ use uuid::Uuid;
 use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 
-pub type ObjectID = u64;
+pub type ObjectID = Uuid;
 
 #[derive(Debug)]
 #[derive(Default)]

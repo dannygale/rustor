@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::objstore::ObjectStore;
 use crate::object::Object;
 
-type ObjectID = u64;
+type ObjectID = Uuid;
 
 type Index = HashMap<ObjectID, ObjKey>;
 
@@ -94,15 +94,15 @@ impl ObjectStore for FileStore {
             .unwrap();
 
         let mut new_obj = Object {
-            //uuid: Uuid::new_v5(&Uuid::NAMESPACE_OID, data),
+            uuid: Uuid::new_v5(&Uuid::NAMESPACE_OID, data),
             //uuid: Uuid::new_v4(),
-            uuid: 0,
+            //uuid: 0,
             data: Some(data.to_vec()),
             hash: 0,
             size: data.len() as u64
         };
         new_obj.hash = new_obj.calculate_hash();
-        new_obj.uuid = new_obj.hash;
+        //new_obj.uuid = new_obj.hash;
         // now have a fully poppulated object struct
 
         // seek to the end of the file
@@ -171,3 +171,11 @@ impl ObjectStore for FileStore {
     }
 }
 
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_save_index() {
+
+    }
+}
