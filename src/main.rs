@@ -1,14 +1,16 @@
 pub mod object;
 pub mod objstore;
+pub mod keystore;
 //pub mod keystore;
 
+use keystore::json_keystore::JsonKeystore;
 use objstore::filestore::FileStore;
 use objstore::objstore::ObjectStore;
 //use keystore::keystore::SQLiteKeyStore;
 
 use std::path::PathBuf;
-use std::str;
-use uuid::Uuid;
+//use std::str;
+//use uuid::Uuid;
 use std::io;
 
 fn main() -> io::Result<()> {

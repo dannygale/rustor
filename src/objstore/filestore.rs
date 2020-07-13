@@ -1,16 +1,17 @@
 use std::path::{PathBuf};
 use std::fs::{OpenOptions};
-use std::fs;
-//use std::default::Default;
 use std::collections::HashMap;
 use std::io::{Seek, SeekFrom, Read, Write, Error};
 
-use serde_json;
+//use serde_json;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
+//use crate::keystore::json_keystore::JsonKeystore;
 use crate::objstore::ObjectStore;
-use crate::object::Object;
+use crate::object::{Object, ObjKey};
+use crate::keystore::keystore::KeyStore;
+use crate::keystore::json_keystore::JsonKeystore;
 
 type ObjectID = Uuid;
 
@@ -20,14 +21,12 @@ type Index = HashMap<ObjectID, ObjKey>;
 pub struct FileStore {
     data_path: PathBuf,
     index_path: PathBuf,
-    index: Index
+    index: JsonKeystore
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ObjKey {
-    uuid: ObjectID,
-    hash: u64,
-    size: u64,
+struct FilestoreObjKey {
+    key: ObjKey,
     offset: u64,
 }
 
@@ -43,41 +42,10 @@ impl FileStore {
         let fs = FileStore { 
             data_path: data_path,
             index_path: index_path,
-            index: HashMap::new()
+            index: JsonKeystore::default()
         };
         
         fs
-    }
-
-    fn read_index(&self) -> Result<Index, Error> {
-        println!("Opening index at {}", self.index_path.to_str().unwrap());
-        let mut f = OpenOptions::new().create(true);
-        let mut indexfile = OpenOptions::new()
-            .read(true)
-            .open(self.index_path.as_path())
-            .unwrap();
-
-        println!("Reading index from file");
-        let v = serde_json::from_reader(indexfile)?;
-        Ok(v)
-    }
-
-
-    fn write_index(&self, idx: &Index) -> Result<(), Error> {
-        println!("Writing index at {}", self.index_path.to_str().unwrap());
-        let mut idxfile = OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(self.index_path.as_path())
-            .unwrap();
-        serde_json::to_writer_pretty(idxfile, idx);
-        Ok(())
-    }
-
-    pub fn put_str(&mut self, text: &str) -> Result<ObjectID, Error> {
-        let objid = self.put(text.as_bytes())?;
-        println!("put_str: '{}' -> objid: {}", text, &objid);
-        Ok(objid)
     }
 }
 
@@ -94,49 +62,43 @@ impl ObjectStore for FileStore {
             .unwrap();
 
         let mut new_obj = Object {
-            uuid: Uuid::new_v5(&Uuid::NAMESPACE_OID, data),
-            //uuid: Uuid::new_v4(),
-            //uuid: 0,
+            key: ObjKey {
+                uuid: Uuid::new_v5(&Uuid::NAMESPACE_OID, data),
+                //uuid: Uuid::new_v4(),
+                //uuid: 0,
+                hash: 0,
+                size: data.len() as u64 
+            },
             data: Some(data.to_vec()),
-            hash: 0,
-            size: data.len() as u64
         };
-        new_obj.hash = new_obj.calculate_hash();
+        new_obj.key.hash = new_obj.calculate_hash();
         //new_obj.uuid = new_obj.hash;
         // now have a fully poppulated object struct
 
         // seek to the end of the file
         let offset = objfile.seek(SeekFrom::End(0)).unwrap();
         
-        // build the key
-        let key = ObjKey {
-            uuid: new_obj.uuid,
-            hash: new_obj.hash,
-            size: new_obj.size,
-            offset: offset
-        };
+        let key = new_obj.key;
         println!("{:?}", &key);
 
         // insert the key into the index
-        let mut index = self.read_index()?;
-        println!("inserting key into index");
-        index.insert(key.uuid, key);
-        self.write_index(&index);
+        self.index.set(key.uuid, key);
 
         //write the object 
         let bytes_written = objfile.write(data);
         objfile.flush()?;
 
-        Ok(new_obj.uuid)
+        Ok(new_obj.key.uuid)
     }
 
     fn get(&mut self, uuid: ObjectID) -> Result<Option<Vec<u8>>, Error> {
         println!("get uuid: {:?}", uuid);
 
-        let idx = self.read_index()?;
-
         // look up uuid
-        let objkey = idx.get(&uuid).unwrap();
+        let objkey = match self.index.get(&uuid)? {
+            None => return Ok(None),
+            Some(k) => k,
+        };
         println!("{:?}", &objkey);
 
         // create a vector for the data

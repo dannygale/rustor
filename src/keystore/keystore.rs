@@ -1,60 +1,18 @@
-use std::default::Default;
+use std::io;
+use std::collections::HashMap;
+//use std::error::Error;
+//use std::default::Default;
 use uuid::Uuid;
-use rusqlite::{Connection, Result, params};
 
-use crate::object::Object;
+use crate::object::{Object, ObjKey};
 
 pub trait KeyStore {
-    fn store(self, object: &Object) -> Result<Object>;
-    fn retrieve(self, uuid: Uuid) -> Result<Object>;
-    fn delete(&mut self, uuid: Uuid) -> Result<()>;
+    fn set(&self, uuid: Uuid, object: ObjKey) -> io::Result<()>;
+    fn get(&self, uuid: &Uuid) -> io::Result<Option<&ObjKey>>;
+    fn delete(&mut self, uuid: &Uuid) -> io::Result<()>;
+
+    fn mset(&self, objects: &HashMap<Uuid, ObjKey>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
+    fn mget(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<ObjKey>>>;
+    fn mdelete(&mut self, uuid: Uuid) -> io::Result<HashMap<Uuid, io::Result<()>>>;
 }
 
-pub struct SQLiteKeyStore {
-    filename: &'static str,
-    dbconn: Connection,
-}
-
-impl SQLiteKeyStore {
-    pub fn new(filename: &'static str) -> SQLiteKeyStore {
-        let mut ks = SQLiteKeyStore {
-            filename,
-            dbconn: Connection::open(filename).unwrap()
-        };
-
-        ks.create_table(&"object", vec![
-            ("uuid", "TEXT PRIMARY KEY"),
-            ("hash", "UNSIGNED BIG INT"),
-            ("size", "UNSIGNED BIG INT"),
-        ]);
-        
-        ks
-    }
-
-    pub fn create_table(&mut self, name: &str, fields: Vec<(&str, &str)>) -> Result<()> {
-        let mut s: String = format!("CREATE TABLE {} ( \n )", name);
-        for (field, field_type) in fields {
-            s.push_str(format!("{} {},\n", field, field_type).as_str());
-        }
-        self.dbconn.execute(s.as_str(), params![]);
-        Ok(())
-    }
-}
-
-impl KeyStore for SQLiteKeyStore {
-    fn store(mut self, obj: &Object) -> Result<Object> {
-        // an object has been built and needs to be stored
-        self.dbconn.execute("INSERT INTO object (uuid, hash, size) VALUES (?1, ?2, ?3)", &[obj.uuid, obj.hash, obj.size]);
-
-        Ok(obj)
-    }
-
-    fn retrieve(mut self, uuid: Uuid) -> Result<Object> {
-        self.dbconn.query_row("");
-
-        let mut obj = Default::default();
-
-        Ok(obj)
-    }
-
-}
