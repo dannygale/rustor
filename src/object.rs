@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 
 pub type ObjectID = Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy)]
 pub struct ObjKey {
     pub uuid: Uuid,
     pub hash: u64,
@@ -30,6 +30,12 @@ impl Object {
         let mut s = DefaultHasher::new();
         self.hash(&mut s);
         s.finish()
+    }
+}
+
+impl Clone for ObjKey {
+    fn clone(&self) -> ObjKey {
+        ObjKey {..*self}
     }
 }
 

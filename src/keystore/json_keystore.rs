@@ -10,6 +10,7 @@ use serde::de::DeserializeOwned;
 //use crate::object::ObjKey;
 use crate::keystore::KeyStore;
 
+// to be re-constructable from JSON, this HashMap must contain objects, not references (T, not &T)
 type Index<T> where T: Serialize + DeserializeOwned = HashMap<Uuid, T>;
 
 #[derive(Debug)]
@@ -18,7 +19,7 @@ pub struct JsonKeystore<T: Serialize + DeserializeOwned> {
     path: PathBuf,
 }
 
-impl<T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
+impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
     pub fn new(path: PathBuf) -> Self {
         Self {
             keystore: HashMap::new(),
@@ -34,7 +35,7 @@ impl<T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
             .unwrap();
 
         println!("Reading index from file");
-        let v = serde_json::from_reader(indexfile)?;
+        let v: Index<T> = serde_json::from_reader(indexfile)?;
         Ok(v)
     }
 
@@ -60,16 +61,17 @@ impl<T> Default for JsonKeystore<T> where T: Serialize + DeserializeOwned {
 }
 
 impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
-    fn set<'a>(&self, uuid: Uuid, key: &'a T) -> io::Result<()> 
+    fn set<'a>(&self, uuid: Uuid, key: T) -> io::Result<()> 
     {
         let mut i = self.read_index()?;
-        i.insert(uuid, *key);
+        i.insert(uuid, key);
         self.write_index(&i)
     }
-    fn get(&self, uuid: &Uuid) -> io::Result<T> {
-        let i = self.read_index()?;
-        let key = i.get(uuid).unwrap();
-        Ok(*key)
+    fn get(&self, uuid: &Uuid) -> Option<&T> {
+        let i = self.read_index().unwrap();
+        //let key = i.get(uuid).unwrap();
+        //Ok(key)
+        i.get(uuid)
     }
     fn delete(&self, uuid: &Uuid) -> io::Result<Option<T>> {
         let mut i = self.read_index()?;

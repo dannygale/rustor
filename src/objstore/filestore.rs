@@ -29,7 +29,7 @@ pub struct FileStore {
     index: JsonKeystore<FilestoreObjKey>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy)]
 struct FilestoreObjKey {
     key: ObjKey,
     offset: u64,
@@ -51,6 +51,12 @@ impl FileStore {
         };
         
         fs
+    }
+}
+
+impl Clone for FilestoreObjKey {
+    fn clone(&self) -> Self {
+        Self {..*self}
     }
 }
 
@@ -86,7 +92,7 @@ impl ObjectStore for FileStore {
         println!("{:?}", &fs_key.key);
 
         // insert the key into the index
-        self.index.set(fs_key.key.uuid, &fs_key);
+        self.index.set(fs_key.key.uuid, fs_key);
 
         //write the object 
         let _bytes_written = objfile.write(data);
@@ -99,7 +105,7 @@ impl ObjectStore for FileStore {
         println!("get uuid: {:?}", uuid);
 
         // look up uuid
-        let objkey = self.index.get(&uuid)?;
+        let objkey = self.index.get(&uuid).unwrap();
         println!("{:?}", &objkey);
 
         // create a vector for the data
