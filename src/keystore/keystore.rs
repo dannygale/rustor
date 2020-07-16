@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 //use crate::object::ObjKey;
 
 pub trait KeyStore<T: Serialize + DeserializeOwned> {
-    fn set(&self, uuid: Uuid, object: T) -> Option<T>;
+    fn set(&mut self, uuid: Uuid, object: T) -> Option<T>;
     fn get(&self, uuid: &Uuid) -> Option<&T>;
     fn delete(&mut self, uuid: &Uuid) -> io::Result<Option<T>>;
 

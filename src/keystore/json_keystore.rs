@@ -64,7 +64,7 @@ impl<T> Default for JsonKeystore<T> where T: Serialize + DeserializeOwned {
 }
 
 impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
-    fn set<'a>(&self, uuid: Uuid, key: T) -> Option<T>
+    fn set<'a>(&mut self, uuid: Uuid, key: T) -> Option<T>
     {
         self.keystore.insert(uuid, key)
     }
