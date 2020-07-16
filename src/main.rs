@@ -3,7 +3,6 @@ pub mod objstore;
 pub mod keystore;
 //pub mod keystore;
 
-use keystore::json_keystore::JsonKeystore;
 use objstore::filestore::FileStore;
 use objstore::objstore::ObjectStore;
 //use keystore::keystore::SQLiteKeyStore;
@@ -43,6 +42,7 @@ fn main() -> io::Result<()> {
     //println!("deleted {}", uuid);
 
     let data = fs.get(uuid).unwrap().unwrap();
+    println!("{:?}", data);
 
     /*
     loop {

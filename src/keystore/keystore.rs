@@ -4,15 +4,31 @@ use std::collections::HashMap;
 //use std::default::Default;
 use uuid::Uuid;
 
-use crate::object::{Object, ObjKey};
+use serde::{Serialize};
+use serde::de::DeserializeOwned;
 
-pub trait KeyStore {
-    fn set(&self, uuid: Uuid, object: ObjKey) -> io::Result<()>;
-    fn get(&self, uuid: &Uuid) -> io::Result<Option<&ObjKey>>;
-    fn delete(&mut self, uuid: &Uuid) -> io::Result<()>;
+//use crate::object::ObjKey;
 
-    fn mset(&self, objects: &HashMap<Uuid, ObjKey>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
-    fn mget(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<ObjKey>>>;
-    fn mdelete(&mut self, uuid: Uuid) -> io::Result<HashMap<Uuid, io::Result<()>>>;
+pub trait KeyStore<T: Serialize + DeserializeOwned> {
+    fn set(&self, uuid: Uuid, object: &T) -> io::Result<()>;
+    fn get(&self, uuid: &Uuid) -> io::Result<T>;
+    fn delete(&self, uuid: &Uuid) -> io::Result<Option<T>>;
+
+    fn mset(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
+    fn mget(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<T>>>;
+    fn mdelete(&self, uuid: Uuid) -> io::Result<HashMap<Uuid, io::Result<()>>>;
 }
+
+/*
+pub trait GenericKeyStore {
+    fn set<T>(&self, uuid: Uuid, object: T) -> io::Result<()>;
+    fn get<T>(&self, uuid: &Uuid) -> io::Result<Option<&T>>;
+    fn delete(&self, uuid: &Uuid) -> io::Result<()>;
+
+    fn mset<T>(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
+    fn mget<T>(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<T>>>;
+    fn mdelete(&self, uuid: Uuid) -> io::Result<HashMap<Uuid, io::Result<()>>>;
+}
+*/
+
 

@@ -3,25 +3,30 @@ use std::fs::{OpenOptions};
 use std::collections::HashMap;
 use std::io::{Seek, SeekFrom, Read, Write, Error};
 
+// for data hashing
+use std::hash::Hasher;
+use std::collections::hash_map::DefaultHasher;
+
 //use serde_json;
 use serde::{Serialize, Deserialize};
+use serde::de::DeserializeOwned;
 use uuid::Uuid;
 
 //use crate::keystore::json_keystore::JsonKeystore;
 use crate::objstore::ObjectStore;
-use crate::object::{Object, ObjKey};
+use crate::object::{ObjKey};
 use crate::keystore::keystore::KeyStore;
-use crate::keystore::json_keystore::JsonKeystore;
+use crate::keystore::JsonKeystore;
 
 type ObjectID = Uuid;
 
-type Index = HashMap<ObjectID, ObjKey>;
+type Index<T> where T: Serialize + DeserializeOwned = HashMap<ObjectID, T>;
 
 #[derive(Debug)]
 pub struct FileStore {
     data_path: PathBuf,
     index_path: PathBuf,
-    index: JsonKeystore
+    index: JsonKeystore<FilestoreObjKey>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -61,7 +66,7 @@ impl ObjectStore for FileStore {
             .open(self.data_path.as_path())
             .unwrap();
 
-        let mut new_obj = Object {
+        let mut fs_key = FilestoreObjKey {
             key: ObjKey {
                 uuid: Uuid::new_v5(&Uuid::NAMESPACE_OID, data),
                 //uuid: Uuid::new_v4(),
@@ -69,40 +74,36 @@ impl ObjectStore for FileStore {
                 hash: 0,
                 size: data.len() as u64 
             },
-            data: Some(data.to_vec()),
+            offset: objfile.seek(SeekFrom::End(0)).unwrap()
         };
-        new_obj.key.hash = new_obj.calculate_hash();
-        //new_obj.uuid = new_obj.hash;
-        // now have a fully poppulated object struct
+        let mut hasher = DefaultHasher::new();
+        hasher.write(data);
+        fs_key.key.hash = hasher.finish();
 
         // seek to the end of the file
-        let offset = objfile.seek(SeekFrom::End(0)).unwrap();
+        fs_key.offset = objfile.seek(SeekFrom::End(0)).unwrap();
         
-        let key = new_obj.key;
-        println!("{:?}", &key);
+        println!("{:?}", &fs_key.key);
 
         // insert the key into the index
-        self.index.set(key.uuid, key);
+        self.index.set(fs_key.key.uuid, &fs_key);
 
         //write the object 
-        let bytes_written = objfile.write(data);
+        let _bytes_written = objfile.write(data);
         objfile.flush()?;
 
-        Ok(new_obj.key.uuid)
+        Ok(fs_key.key.uuid)
     }
 
     fn get(&mut self, uuid: ObjectID) -> Result<Option<Vec<u8>>, Error> {
         println!("get uuid: {:?}", uuid);
 
         // look up uuid
-        let objkey = match self.index.get(&uuid)? {
-            None => return Ok(None),
-            Some(k) => k,
-        };
+        let objkey = self.index.get(&uuid)?;
         println!("{:?}", &objkey);
 
         // create a vector for the data
-        let mut data = vec![0u8; objkey.size as usize];
+        let mut data = vec![0u8; objkey.key.size as usize];
         println!("vector capacity: {:?}", data.len());
 
         // open the file, seek to the right spot, and read the data
@@ -114,22 +115,18 @@ impl ObjectStore for FileStore {
         Ok(Some(data))
     }
 
-    fn delete(&mut self, uuid: ObjectID) -> Result<(), Error> {
-        // open index
-        let mut idx = self.read_index()?;
-
-        // get object key and remove it
-        let key = idx.remove(&uuid).unwrap();
+    fn delete(&mut self, uuid: ObjectID) -> Result<Option<ObjectID>, Error> {
+        let fs_key = match self.index.delete(&uuid)? {
+            Some(k) => k,
+            None => return Ok(None)
+        };
 
         // zero-out data in data file
         let mut f = OpenOptions::new().write(true).open(&self.data_path)?;
-        f.seek(SeekFrom::Start(key.offset))?;
-        f.write(&vec![0; key.size as usize])?;
+        f.seek(SeekFrom::Start(fs_key.offset))?;
+        f.write(&vec![0; fs_key.key.size as usize])?;
 
-        // persist the change in the index
-        self.write_index(&idx)?;
-
-        Ok(())
+        Ok(Some(uuid))
     }
 }
 
