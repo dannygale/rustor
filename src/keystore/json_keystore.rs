@@ -64,11 +64,9 @@ impl<T> Default for JsonKeystore<T> where T: Serialize + DeserializeOwned {
 }
 
 impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
-    fn set<'a>(&self, uuid: Uuid, key: T) -> io::Result<()> 
+    fn set<'a>(&self, uuid: Uuid, key: T) -> Option<T>
     {
-        let mut i = self.read_index()?;
-        i.insert(uuid, key);
-        self.write_index()
+        self.keystore.insert(uuid, key)
     }
     fn get(&self, uuid: &Uuid) -> Option<&T> {
         self.keystore.get(uuid)
