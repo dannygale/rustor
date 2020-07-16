@@ -11,7 +11,7 @@ use serde::de::DeserializeOwned;
 use crate::keystore::KeyStore;
 
 // to be re-constructable from JSON, this HashMap must contain objects, not references (T, not &T)
-type Index<T> where T: Serialize + DeserializeOwned = HashMap<Uuid, T>;
+type Index<T> = HashMap<Uuid, T>;
 
 #[derive(Debug)]
 pub struct JsonKeystore<T: Serialize + DeserializeOwned> {
@@ -49,7 +49,7 @@ impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
             .truncate(true)
             .open(self.path.as_path())
             .unwrap();
-        serde_json::to_writer_pretty(idxfile, &self.keystore);
+        serde_json::to_writer_pretty(idxfile, &self.keystore)?;
         Ok(())
     }
 }
@@ -73,9 +73,10 @@ impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
     }
     fn delete(&mut self, uuid: &Uuid) -> io::Result<Option<T>> {
         let key = self.keystore.remove(uuid);
-        self.write_index();
+        self.write_index()?;
         Ok(key)
     }
+    /*
     fn mset(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>> {
         let mut results: HashMap<Uuid, io::Result<()>> = HashMap::new();
         // TODO: write JsonKeystore.mset
@@ -91,4 +92,5 @@ impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
         // TODO: write JsonKeystore.mdelete
         Ok(results)
     }
+    */
 }

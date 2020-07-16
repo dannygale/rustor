@@ -1,6 +1,5 @@
 use std::path::{PathBuf};
 use std::fs::{OpenOptions};
-use std::collections::HashMap;
 use std::io::{Seek, SeekFrom, Read, Write, Error};
 
 // for data hashing
@@ -9,7 +8,6 @@ use std::collections::hash_map::DefaultHasher;
 
 //use serde_json;
 use serde::{Serialize, Deserialize};
-use serde::de::DeserializeOwned;
 use uuid::Uuid;
 
 //use crate::keystore::json_keystore::JsonKeystore;
@@ -19,8 +17,6 @@ use crate::keystore::keystore::KeyStore;
 use crate::keystore::JsonKeystore;
 
 type ObjectID = Uuid;
-
-type Index<T> where T: Serialize + DeserializeOwned = HashMap<ObjectID, T>;
 
 #[derive(Debug)]
 pub struct FileStore {

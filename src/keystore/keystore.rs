@@ -1,7 +1,4 @@
 use std::io;
-use std::collections::HashMap;
-//use std::error::Error;
-//use std::default::Default;
 use uuid::Uuid;
 
 use serde::{Serialize};
@@ -14,9 +11,9 @@ pub trait KeyStore<T: Serialize + DeserializeOwned> {
     fn get(&self, uuid: &Uuid) -> Option<&T>;
     fn delete(&mut self, uuid: &Uuid) -> io::Result<Option<T>>;
 
-    fn mset(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
-    fn mget(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<T>>>;
-    fn mdelete(&self, uuid: Uuid) -> io::Result<HashMap<Uuid, io::Result<()>>>;
+    //fn mset(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
+    //fn mget(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<T>>>;
+    //fn mdelete(&self, uuid: Uuid) -> io::Result<HashMap<Uuid, io::Result<()>>>;
 }
 
 /*
