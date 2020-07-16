@@ -8,7 +8,7 @@ use objstore::objstore::ObjectStore;
 //use keystore::keystore::SQLiteKeyStore;
 
 use std::path::PathBuf;
-//use std::str;
+use std::str;
 use uuid::Uuid;
 use std::io::prelude::*;
 use std::io;
@@ -54,14 +54,17 @@ fn main() -> io::Result<()> {
 
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
+        input.truncate(input.len() - 1);
         
         let tokens: Vec<&str> = input.split(" ").collect();
         println!("{:?}", tokens);
 
         let cmd = String::from(tokens[0]);
 
-        let mut arg = String::from(tokens[1]);
-        arg.truncate(tokens[1].len() - 1);
+        let mut arg = String::new();
+        if tokens.len() == 2 {
+            arg.push_str(tokens[1]);
+        } 
         println!("{:?}: {:?}", cmd, arg);
 
         match cmd.as_str() {
@@ -70,17 +73,23 @@ fn main() -> io::Result<()> {
                 println!("uuid: {:?}", uuid);
             },
             "get" => {
-                let uuid = Uuid::from_slice(arg.as_bytes()).unwrap();
-                let data = fs.get(uuid)?;
+                let uuid = Uuid::parse_str(arg.as_str()).unwrap();
+                let data = match fs.get(uuid)? {
+                    Some(d) => d,
+                    None => Vec::new()
+                };
                 println!("data: {:?}", data);
             },
             "delete" => {
-                let uuid = Uuid::from_slice(arg.as_bytes()).unwrap();
+                let uuid = Uuid::parse_str(arg.as_str()).unwrap();
                 let result = fs.delete(uuid);
                 println!("{:?}", result);
             },
             "objects" => {
-                
+                let objects = fs.get_objects();
+                for (uuid, key) in objects {
+                    println!("{:?}", key)
+                }
             }
             _ => {
                 println!("Unknown command: {:?}", cmd);

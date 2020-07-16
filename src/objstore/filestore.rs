@@ -5,6 +5,7 @@ use std::io::{Seek, SeekFrom, Read, Write, Error};
 // for data hashing
 use std::hash::Hasher;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
 
 //use serde_json;
 use serde::{Serialize, Deserialize};
@@ -26,7 +27,7 @@ pub struct FileStore {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy)]
-struct FilestoreObjKey {
+pub struct FilestoreObjKey {
     key: ObjKey,
     offset: u64,
 }
@@ -48,6 +49,10 @@ impl FileStore {
         
         fs
     }
+
+    pub fn get_objects(&self) -> &HashMap<ObjectID, FilestoreObjKey> {
+        self.index.get_objects()
+    }
 }
 
 impl Clone for FilestoreObjKey {
@@ -63,7 +68,6 @@ impl ObjectStore for FileStore {
 
         let mut objfile = OpenOptions::new()
             .write(true)
-            .truncate(true)
             .create(true)
             .open(self.data_path.as_path())
             .unwrap();
@@ -101,7 +105,10 @@ impl ObjectStore for FileStore {
         println!("get uuid: {:?}", uuid);
 
         // look up uuid
-        let objkey = self.index.get(&uuid).unwrap();
+        let objkey = match self.index.get(&uuid) {
+            Some(key) => key,
+            _ => return Ok(None)
+        };
         println!("{:?}", &objkey);
 
         // create a vector for the data
