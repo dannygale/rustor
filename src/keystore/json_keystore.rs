@@ -21,10 +21,13 @@ pub struct JsonKeystore<T: Serialize + DeserializeOwned> {
 
 impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
     pub fn new(path: PathBuf) -> Self {
-        Self {
+        let mut s = Self {
             keystore: HashMap::new(),
             path: path
-        }
+        };
+
+        s.keystore = s.read_index().unwrap();
+        s
     }
 
     fn read_index(&self) -> io::Result<Index<T>> {
@@ -39,14 +42,14 @@ impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
         Ok(v)
     }
 
-    fn write_index(&self, idx: &Index<T>) -> io::Result<()> {
+    fn write_index(&self) -> io::Result<()> {
         println!("Writing index at {}", self.path.to_str().unwrap());
         let idxfile = OpenOptions::new()
             .write(true)
             .truncate(true)
             .open(self.path.as_path())
             .unwrap();
-        serde_json::to_writer_pretty(idxfile, idx);
+        serde_json::to_writer_pretty(idxfile, &self.keystore);
         Ok(())
     }
 }
@@ -65,18 +68,14 @@ impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
     {
         let mut i = self.read_index()?;
         i.insert(uuid, key);
-        self.write_index(&i)
+        self.write_index()
     }
     fn get(&self, uuid: &Uuid) -> Option<&T> {
-        let i = self.read_index().unwrap();
-        //let key = i.get(uuid).unwrap();
-        //Ok(key)
-        i.get(uuid)
+        self.keystore.get(uuid)
     }
     fn delete(&self, uuid: &Uuid) -> io::Result<Option<T>> {
-        let mut i = self.read_index()?;
-        let key = i.remove(uuid);
-        self.write_index(&i);
+        let key = self.keystore.remove(uuid);
+        self.write_index();
         Ok(key)
     }
     fn mset(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>> {
