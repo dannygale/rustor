@@ -9,8 +9,10 @@ use objstore::objstore::ObjectStore;
 
 use std::path::PathBuf;
 //use std::str;
-//use uuid::Uuid;
+use uuid::Uuid;
+use std::io::prelude::*;
 use std::io;
+//use std::fs::File;
 
 fn main() -> io::Result<()> {
 
@@ -32,6 +34,7 @@ fn main() -> io::Result<()> {
 
     let mut fs = FileStore::new(PathBuf::from("."));
 
+    /*
     let uuid = fs.put("asdfqwerty1234".as_bytes()).unwrap();
     println!("uuid: {}", uuid);
 
@@ -43,22 +46,45 @@ fn main() -> io::Result<()> {
 
     let data = fs.get(uuid).unwrap().unwrap();
     println!("{:?}", data);
-
-    /*
-    loop {
-        println!("> ");
-
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(n) => {
-                println!("{} bytes read", n);
-                println!("{}", input);
-                
-            }
-            Err(error) => println!("error: {}", error)
-        }
-    }
     */
 
-    Ok(())
+    loop {
+        print!("> ");
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        
+        let tokens: Vec<&str> = input.split(" ").collect();
+        println!("{:?}", tokens);
+
+        let cmd = String::from(tokens[0]);
+
+        let mut arg = String::from(tokens[1]);
+        arg.truncate(tokens[1].len() - 1);
+        println!("{:?}: {:?}", cmd, arg);
+
+        match cmd.as_str() {
+            "put" => { 
+                let uuid = fs.put(arg.as_bytes())?;
+                println!("uuid: {:?}", uuid);
+            },
+            "get" => {
+                let uuid = Uuid::from_slice(arg.as_bytes()).unwrap();
+                let data = fs.get(uuid)?;
+                println!("data: {:?}", data);
+            },
+            "delete" => {
+                let uuid = Uuid::from_slice(arg.as_bytes()).unwrap();
+                let result = fs.delete(uuid);
+                println!("{:?}", result);
+            },
+            "objects" => {
+                
+            }
+            _ => {
+                println!("Unknown command: {:?}", cmd);
+            }
+        }
+    }
 }
