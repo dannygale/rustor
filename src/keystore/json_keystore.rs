@@ -73,7 +73,7 @@ impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
     fn get(&self, uuid: &Uuid) -> Option<&T> {
         self.keystore.get(uuid)
     }
-    fn delete(&self, uuid: &Uuid) -> io::Result<Option<T>> {
+    fn delete(&mut self, uuid: &Uuid) -> io::Result<Option<T>> {
         let key = self.keystore.remove(uuid);
         self.write_index();
         Ok(key)

@@ -12,7 +12,7 @@ use serde::de::DeserializeOwned;
 pub trait KeyStore<T: Serialize + DeserializeOwned> {
     fn set(&self, uuid: Uuid, object: T) -> io::Result<()>;
     fn get(&self, uuid: &Uuid) -> Option<&T>;
-    fn delete(&self, uuid: &Uuid) -> io::Result<Option<T>>;
+    fn delete(&mut self, uuid: &Uuid) -> io::Result<Option<T>>;
 
     fn mset(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
     fn mget(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<T>>>;
