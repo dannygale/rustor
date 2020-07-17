@@ -1,11 +1,5 @@
-pub mod object;
-pub mod objstore;
-pub mod keystore;
-//pub mod keystore;
 
-use objstore::filestore::FileStore;
-use objstore::objstore::ObjectStore;
-//use keystore::keystore::SQLiteKeyStore;
+use rustor::*;
 
 use std::path::PathBuf;
 use std::str;
