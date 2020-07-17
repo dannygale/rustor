@@ -72,6 +72,7 @@ impl ObjectStore for FileStore {
             .open(self.data_path.as_path())
             .unwrap();
 
+        // key generation
         let mut fs_key = FilestoreObjKey {
             key: ObjKey {
                 uuid: Uuid::new_v5(&Uuid::NAMESPACE_OID, data),
@@ -86,14 +87,17 @@ impl ObjectStore for FileStore {
         hasher.write(data);
         fs_key.key.hash = hasher.finish();
 
+        // placement
         // seek to the end of the file
         fs_key.offset = objfile.seek(SeekFrom::End(0)).unwrap();
         
         println!("{:?}", &fs_key.key);
 
+        // store key
         // insert the key into the index
         self.index.set(fs_key.key.uuid, fs_key);
 
+        // store object
         //write the object 
         let _bytes_written = objfile.write(data);
         objfile.flush()?;
@@ -104,6 +108,7 @@ impl ObjectStore for FileStore {
     fn get(&mut self, uuid: ObjectID) -> Result<Option<Vec<u8>>, Error> {
         println!("get uuid: {:?}", uuid);
 
+        // retrieve key
         // look up uuid
         let objkey = match self.index.get(&uuid) {
             Some(key) => key,
@@ -115,6 +120,7 @@ impl ObjectStore for FileStore {
         let mut data = vec![0u8; objkey.key.size as usize];
         println!("vector capacity: {:?}", data.len());
 
+        // retrieve data
         // open the file, seek to the right spot, and read the data
         let mut f = OpenOptions::new().read(true).open(&self.data_path)?;
         f.seek(SeekFrom::Start(objkey.offset))?;
@@ -125,15 +131,20 @@ impl ObjectStore for FileStore {
     }
 
     fn delete(&mut self, uuid: ObjectID) -> Result<Option<ObjectID>, Error> {
+        // retrieve key
+        // TODO: separate key retrieval and deletion
         let fs_key = match self.index.delete(&uuid)? {
             Some(k) => k,
             None => return Ok(None)
         };
 
         // zero-out data in data file
+        //  is this necessary?
         let mut f = OpenOptions::new().write(true).open(&self.data_path)?;
         f.seek(SeekFrom::Start(fs_key.offset))?;
         f.write(&vec![0; fs_key.key.size as usize])?;
+
+        // TODO: delete key
 
         Ok(Some(uuid))
     }
