@@ -9,7 +9,7 @@ use std::mem;
 
 type OptBoxNode<K,D> = Option<Box<Node<K,D>>>;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 struct Node<K, D> {
     key: K,
     data: D,
@@ -20,7 +20,21 @@ struct Node<K, D> {
     right: OptBoxNode<K,D>,
 }
 
-
+use std::fmt;
+impl<K,D> fmt::Debug for Node<K,D> 
+where K: fmt::Debug, D: fmt::Debug {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let left = match &self.left {
+            Some(node) => format!("Node {{ {:?}:{:?} }}", node.key, node.data),
+            None => String::from("None"),
+        };
+        let right = match &self.right {
+            Some(node) => format!("Node {{ {:?}:{:?} }}", node.key, node.data),
+            None => String::from("None"),
+        };
+        write!(f, "{{ {:?}:{:?}, left: {:?}, right: {:?} }}", &self.key, &self.data, left, right)
+    }
+}
 
 impl<K,D> Node<K,D> 
 where K: PartialEq + PartialOrd,
@@ -139,11 +153,9 @@ where K: PartialEq + PartialOrd,
      *
      *
      */
-    fn rotate_right(&mut self) {
-        if self.left.is_none() { return; };
-
-        let left_left: Box<Node<K,D>> = self.left.as_mut().unwrap().left.take().unwrap();
-        let mut left: Box<Node<K,D>> = self.left.take().unwrap();
+    fn rotate_right(&mut self) -> bool {
+        let mut left: Box<Node<K,D>> = self.left.take().expect("no left child");
+        let left_left: Box<Node<K,D>> = left.left.take().expect("no left left child");
 
         // now self.left is None and left.left is None, but we have the data
         // need to:
@@ -155,6 +167,8 @@ where K: PartialEq + PartialOrd,
 
         self.left = Some(left_left);
         self.right = Some(left);
+
+        true
 
         /*
         let mut new_root: Box<Node<K,D>> = self.left.unwrap();
@@ -219,8 +233,7 @@ where K: PartialEq + PartialOrd,
     }
     */
 
-    /*  a             b
-     *   \           / \
+    /*  a             b \           / \
      *    c    =>   a   c 
      *   /  
      *  b   
@@ -277,6 +290,7 @@ where K: PartialEq + PartialOrd,
         (self.key == other.key) && (self.data == other.data)
     }
 }
+
 
 
 struct NodeIter<'a, K, D> {
@@ -376,7 +390,7 @@ where K: PartialEq + PartialOrd + Copy + Clone,
     }
 }
 
-impl<K,D> From<&Vec<(K,D)>> for AVLTree<K,D> 
+impl<K,D> From <&Vec<(K,D)>> for AVLTree<K,D> 
 where K: PartialEq + PartialOrd + Copy + Clone,
       D: PartialEq + PartialOrd + Copy + Clone,
 {
@@ -390,7 +404,7 @@ where K: PartialEq + PartialOrd + Copy + Clone,
 }
 
 use std::iter::{Iterator, FromIterator, IntoIterator};
-impl <K,D> FromIterator<Node<K,D>> for AVLTree<K,D> 
+impl <K,D> FromIterator <Node<K,D>> for AVLTree<K,D> 
 where K: PartialEq + PartialOrd + Copy + Clone,
       D: PartialEq + PartialOrd + Copy + Clone, 
 {
@@ -416,19 +430,64 @@ where K: PartialEq + PartialOrd,
 }
 */
 
+/*
+use proptest::prelude::*;
+
+fn arb_node(max_qty: usize) -> impl Strategy<Value = Node<isize, String>> {
+    (any::<isize>(), "[a-z]*")
+        .prop_map(|(key, data)| Node::new(key, data))
+        .boxed()
+}
+
+prop_compose! {
+    fn arb_node2(_d: isize) 
+        (key in 0..100isize, data in "[a-z]*")
+            -> Node<isize, String> {
+                Node::new(key, data) 
+        }
+}
+
+
+proptest! {
+    #[test]
+    fn test_put_inorder_set(nodes in arb_node2(0)) {
+        println!("{:?}", nodes);
+    }
+}
+*/
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_insert() {
+    fn test_put_inorder_set() {
         let data = vec![
             (0, "asdf"),
             (1, "qwerty"),
             (2, "zxcv")
         ];
-        let mut tree = AVLTree::from(&data);
+        let tree = AVLTree::from(&data);
 
-        assert_eq!(tree.items(), data);
+        assert!(tree.items().eq(&data));
+    }
+
+    #[test]
+    fn test_rotate_right() {
+        let data = vec![
+            (2, "zxcv"),
+            (1, "qwerty"),
+            (0, "asdf"),
+        ];
+
+        let mut a = Node::new(data[0].0, data[0].1);
+        let mut b = Node::new(data[1].0, data[1].1); 
+        let mut c = Node::new(data[2].0, data[2].1);
+
+        b.left = Some(Box::new(c));
+        a.left = Some(Box::new(b));
+
+        assert_eq!(*b.left.unwrap(), c);
+        assert_eq!(*a.left.unwrap(), b);
     }
 }
