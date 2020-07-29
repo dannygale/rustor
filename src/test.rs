@@ -1,7 +1,7 @@
 
 fn run_test<T>(test: T) -> ()
-    where T: FnOnce -> () + panic::UnwindSafe {
-    
+    where T: FnOnce -> () + panic::UnwindSafe 
+{
     setup();
 
     let result = panic::catch_unwind(||{
