@@ -155,7 +155,7 @@ where K: PartialEq + PartialOrd,
      */
     fn rotate_right(&mut self) -> bool {
         let mut left: Box<Node<K,D>> = self.left.take().expect("no left child");
-        let left_left: Box<Node<K,D>> = left.left.take().expect("no left left child");
+        let left_left: Box<Node<K,D>> = left.left.take().expect("no left-left child");
 
         // now self.left is None and left.left is None, but we have the data
         // need to:
@@ -164,7 +164,6 @@ where K: PartialEq + PartialOrd,
         //   make self.right = &left
         mem::swap(&mut self.key, &mut left.key);
         mem::swap(&mut self.data, &mut left.data);
-
         self.left = Some(left_left);
         self.right = Some(left);
 
@@ -484,10 +483,13 @@ mod tests {
         let mut b = Node::new(data[1].0, data[1].1); 
         let mut c = Node::new(data[2].0, data[2].1);
 
+        let bref = &mut b;
+        let aref = &mut a;
+
         b.left = Some(Box::new(c));
         a.left = Some(Box::new(b));
 
-        assert_eq!(*b.left.unwrap(), c);
-        assert_eq!(*a.left.unwrap(), b);
+        assert_eq!(*bref.left.unwrap(), c);
+        assert_eq!(*aref.left.unwrap(), b)
     }
 }
