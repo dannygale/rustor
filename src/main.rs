@@ -25,6 +25,11 @@ fn main() -> io::Result<()> {
     //  read object from object store
     //  return object
     //
+    // DELTE an object by uuid:
+    //  look up the object by uuid
+    //  remove the object from the keystore
+    //  remove the data from storage
+    //  update the freelist to include the freed data
 
     let mut fs = FileStore::new(PathBuf::from("."));
 
