@@ -75,6 +75,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9f8082297d534141b30c8d39e9b1773713ab50fdbe4ff30f750d063b3bfd701"
 
 [[package]]
+name = "librustor"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "proptest",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "log"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -223,6 +234,17 @@ dependencies = [
  "serde_json",
  "uuid",
 ]
+
+[[package]]
+name = "rustorcli"
+version = "0.1.0"
+dependencies = [
+ "librustor",
+]
+
+[[package]]
+name = "rustord"
+version = "0.1.0"
 
 [[package]]
 name = "rusty-fork"

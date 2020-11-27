@@ -1,4 +1,4 @@
-
+extern crate rustor;
 use rustor::*;
 
 use std::path::PathBuf;
