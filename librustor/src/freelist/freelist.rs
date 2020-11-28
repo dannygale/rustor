@@ -1,9 +1,9 @@
 use log::{error, warn, info, debug, trace};
 
 #[derive(Debug, PartialEq)]
-struct FreeListNode {
-    size: usize,
-    address: usize
+pub struct FreeListNode {
+    pub size: usize,
+    pub address: usize
 }
 
 pub trait FreeList {

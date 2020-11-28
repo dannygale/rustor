@@ -7,10 +7,11 @@
 2. `Object` -- sort of a meta-class that has the data and its metadata
 3. `ObjKey` -- a unique identifier for an `Object`, including uuid, hash, and size
 4. `KeyGen` -- generates `ObjKey`s
-5. `FreeList` -- tracks available blocks
-6. `Manifest` -- a selection of blocks that store the data of an `Object`
-7. `KeyStore` -- stores and retrieves `ObjKey`s and their associated `Manifest` by uuid
-8. `BlockStore` -- interfaces with `BlockDevice`s to read and write data
+5. `Placer` -- decides how to break up the data for an `Object` and select available blocks from `FreeList`
+6. `FreeList` -- tracks available blocks
+7. `Manifest` -- a selection of blocks that store the data of an `Object`
+8. `KeyStore` -- stores and retrieves `ObjKey`s and their associated `Manifest` by uuid
+9. `BlockStore` -- interfaces with a `BlockDevice`s to read and write data
 
 # Data Flows
 ## Single Block Device, Contiguous Objects
@@ -18,7 +19,7 @@
 1. `ObjectStore` receives `PUT <object>` request
 2. `ObjectStore` asks  `KeyGen` to create `ObjKey` for object -- uuid, hash, and size
 3. `ObjectStore` asks `FreeList` to allocate space for the object
-4. `Freelist` provides `Manifest` to `ObjectStore`
+4. `FreeList` provides `Manifest` to `ObjectStore`
 5. `ObjectStore` asks `KeyStore` to store `ObjKey` and `Manifest`
 6. `ObjectStore` asks `BlockStore` to write object blocks according to `Manifest`
 7. `ObjectStore` returns uuid to requester

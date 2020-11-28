@@ -1,8 +1,9 @@
-mod freelist;
-use freelist::{FreeList, FreeListNode};
+use crate::freelist::{FreeList, FreeListNode};
+
+use log::{trace, debug, info, warn, error};
 
 #[derive(Debug)]
-struct VecFreeList {
+pub struct VecFreeList {
     free: Vec<FreeListNode>,
 }
 
@@ -36,6 +37,9 @@ impl FreeList for VecFreeList {
         debug!("allocated {} at {}", size, address);
         node.size -= size;
         node.address += size;
+        if node.size == 0 {
+            self.free.remove(index);
+        }
 
         return Ok(address);
     }
@@ -67,14 +71,20 @@ mod tests {
     fn test_allocate() {
         let mut list = VecFreeList::new(1000);
         
+        // test empty list
         assert_eq!(list.free[0], FreeListNode {size: 1000, address: 0});
 
+        // test allocate into empty list
         let address = list.allocate(10).unwrap();
         assert_eq!(address, 0);
+        // test remaining space was pared down appropriately
         assert_eq!(list.free[0], FreeListNode {size: 990, address: 10});
 
+        // allocate a larger section
         let address = list.allocate(20).unwrap();
+        // test that it's placed at the lowest available address
         assert_eq!(address, 10);
+        // test that the remaining space is reduced properly
         assert_eq!(list.free[0], FreeListNode {size: 970, address: 30});
     }
 
@@ -87,9 +97,12 @@ mod tests {
             ]
         };
         let _resp = list.release(10, 0);
-
         assert_eq!(list.free[0], FreeListNode {size:10, address: 0});
         assert_eq!(list.free[1], FreeListNode {size:70, address: 30});
+
+        // make sure this goes in the lowest slot
+        let _resp = list.allocate(10);
+        assert_eq!(list.free[0], FreeListNode {size:70, address:30});
 
         let address = list.allocate(30).unwrap();
         assert_eq!(address, 30);
