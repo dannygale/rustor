@@ -17,6 +17,8 @@ use crate::object::{ObjKey};
 use crate::keystore::keystore::KeyStore;
 use crate::keystore::JsonKeystore;
 
+use log::{trace, debug, info, warn, error};
+
 type ObjectID = Uuid;
 
 #[derive(Debug)]
@@ -40,7 +42,7 @@ impl FileStore {
         index_path.push("index.json");
         data_path.push("data.bin");
 
-        println!("Opening file at {}", data_path.to_str().unwrap());
+        debug!("Opening file at {}", data_path.to_str().unwrap());
         let fs = FileStore { 
             data_path: data_path,
             index_path: index_path,
@@ -64,7 +66,7 @@ impl Clone for FilestoreObjKey {
 impl ObjectStore for FileStore {
     // store a binary object. return its uuid
     fn put(&mut self, data: &[u8]) -> Result<ObjectID, Error> {
-        println!("put data: {:?}", &data);
+        debug!("put data: {:?}", &data);
 
         let mut objfile = OpenOptions::new()
             .write(true)
@@ -91,7 +93,7 @@ impl ObjectStore for FileStore {
         // seek to the end of the file
         fs_key.offset = objfile.seek(SeekFrom::End(0)).unwrap();
         
-        println!("{:?}", &fs_key.key);
+        debug!("{:?}", &fs_key.key);
 
         // store key
         // insert the key into the index
@@ -106,7 +108,7 @@ impl ObjectStore for FileStore {
     }
 
     fn get(&mut self, uuid: ObjectID) -> Result<Option<Vec<u8>>, Error> {
-        println!("get uuid: {:?}", uuid);
+        debug!("get uuid: {:?}", uuid);
 
         // retrieve key
         // look up uuid
@@ -114,18 +116,18 @@ impl ObjectStore for FileStore {
             Some(key) => key,
             _ => return Ok(None)
         };
-        println!("{:?}", &objkey);
+        debug!("{:?}", &objkey);
 
         // create a vector for the data
         let mut data = vec![0u8; objkey.key.size as usize];
-        println!("vector capacity: {:?}", data.len());
+        debug!("vector capacity: {:?}", data.len());
 
         // retrieve data
         // open the file, seek to the right spot, and read the data
         let mut f = OpenOptions::new().read(true).open(&self.data_path)?;
         f.seek(SeekFrom::Start(objkey.offset))?;
         let read_bytes = f.read(&mut data)?;
-        println!("read {:?} bytes", read_bytes);
+        debug!("read {:?} bytes", read_bytes);
 
         Ok(Some(data))
     }

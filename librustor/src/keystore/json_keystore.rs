@@ -8,6 +8,8 @@ use uuid::Uuid;
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
 
+use log::{trace, debug, info, warn, error};
+
 //use crate::object::ObjKey;
 use crate::keystore::KeyStore;
 
@@ -35,18 +37,18 @@ impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
     }
 
     fn read_index(&self) -> io::Result<Index<T>> {
-        println!("Opening index at {}", self.path.to_str().unwrap());
+        trace!("Opening index at {}", self.path.to_str().unwrap());
         let indexfile = OpenOptions::new()
             .read(true)
             .open(self.path.as_path())?;
 
-        println!("Reading index from file");
+        trace!("Reading index from file");
         let v: Index<T> = serde_json::from_reader(indexfile)?;
         Ok(v)
     }
 
     fn write_index(&self) -> io::Result<()> {
-        println!("Writing index at {}", self.path.to_str().unwrap());
+        trace!("Writing index at {}", self.path.to_str().unwrap());
         let idxfile = OpenOptions::new()
             .create(true)
             .write(true)
