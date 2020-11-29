@@ -5,12 +5,26 @@ use std::collections::hash_map::DefaultHasher;
 use serde::{Serialize, Deserialize};
 
 pub type ObjectID = Uuid;
+pub type BlkDevID = Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy)]
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ManifestLocation {
+    SingleBlockDevice { lba: u64, size: u64 },
+    MultiBlockDevice { blkdevid: BlkDevID, lba: u64, size: u64 },
+}
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct Manifest {
+    shards: Vec<ManifestLocation>,
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct ObjKey {
     pub uuid: Uuid,
     pub hash: u64,
-    pub size: u64
+    pub size: u64,
+    pub manifest: Manifest,
 }
 
 #[derive(Debug, Default)]
