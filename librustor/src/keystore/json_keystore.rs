@@ -1,8 +1,8 @@
+#![allow(unused_imports)]
 use std::fs::{OpenOptions};
 use std::io;
 use std::path::PathBuf;
 use std::collections::HashMap;
-use std::io::prelude::*;
 
 use uuid::Uuid;
 use serde::{Serialize};
