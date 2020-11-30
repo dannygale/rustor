@@ -8,14 +8,17 @@ pub type ObjectID = Uuid;
 pub type BlkDevID = Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum ManifestLocation {
-    SingleBlockDevice { lba: u64, size: u64 },
-    MultiBlockDevice { blkdevid: BlkDevID, lba: u64, size: u64 },
+pub struct ManifestLocation {
+    pub blkdevid: Option<BlkDevID>,
+    /// starting LBA
+    pub lba: u64,   
+    /// number of LBAs 
+    pub span: u64,  
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Manifest {
-    shards: Vec<ManifestLocation>,
+    pub shards: Vec<ManifestLocation>,
 }
 
 

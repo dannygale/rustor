@@ -1,4 +1,5 @@
 use crate::freelist::{FreeList, FreeListNode};
+use crate::object::{Manifest, ManifestLocation};
 
 use log::{trace, debug, info, warn, error};
 
@@ -7,7 +8,7 @@ pub struct VecFreeList {
     free: Vec<FreeListNode>,
 }
 
-impl FreeList for VecFreeList {
+impl VecFreeList {
     fn new(size:usize) -> Self {
         let mut s = Self {
             free: Vec::new(),
@@ -17,8 +18,10 @@ impl FreeList for VecFreeList {
         s.free.push(new_node);
         s
     }
+}
 
-    fn allocate(&mut self, size:usize) -> Result<usize, String> {
+impl FreeList for VecFreeList {
+    fn allocate(&mut self, size:usize) -> Result<Manifest, String> {
         let index = match self.free.binary_search_by(|node| node.size.cmp(&size)) {
             Ok(idx) => idx,
             Err(idx) => {
@@ -41,7 +44,9 @@ impl FreeList for VecFreeList {
             self.free.remove(index);
         }
 
-        return Ok(address);
+        let m = Manifest { shards: Vec::new() };
+        m.shards.push(ManifestLocation { lba: address as u64, span: size as u64, blkdevid: None });
+        return Ok(m);
     }
 
     fn release(&mut self, size:usize, address:usize) -> Result<(), String> {
