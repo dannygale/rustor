@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use std::path::PathBuf;
 use std::io::{Seek, SeekFrom, Read, Write, Error};
 use std::fs::{File, OpenOptions};
@@ -14,7 +15,7 @@ pub struct BlockDevice {
 }
 
 impl Default for BlockDevice {
-    fn default() -> Self{
+    fn default() -> Self {
         Self {
             //bs: 4096,
             capacity: 0,
@@ -37,9 +38,13 @@ impl BlockDevice {
     }
 }
 
+use crate::object::ObjKey;
 pub trait BlockStore {
     fn write_block(&mut self, lba: u64, data: [u8; BS4K]) -> Result<(), String>;
     fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> Result<(), String>;
+    
+    fn write(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String>;
+    fn read(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String>;
 }
 
 
@@ -82,5 +87,15 @@ impl BlockStore for BlockDevice {
             return Err("Blockdevice::file is uninitialized".to_string());
         }
 
+    }
+
+    fn write(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String> {
+        
+        Ok(())
+    }
+
+    fn read(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String> {
+
+        Ok(())
     }
 }

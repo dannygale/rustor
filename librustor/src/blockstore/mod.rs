@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 pub mod blockstore;
 
 use blockstore::*;
