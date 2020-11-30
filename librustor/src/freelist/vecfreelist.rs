@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::freelist::{FreeList, FreeListNode};
 use crate::object::{Manifest, ManifestLocation};
 
@@ -9,7 +10,7 @@ pub struct VecFreeList {
 }
 
 impl VecFreeList {
-    fn new(size:usize) -> Self {
+    fn new(size:u64) -> Self {
         let mut s = Self {
             free: Vec::new(),
         };
@@ -21,7 +22,7 @@ impl VecFreeList {
 }
 
 impl FreeList for VecFreeList {
-    fn allocate(&mut self, size:usize) -> Result<Manifest, String> {
+    fn allocate(&mut self, size:u64) -> Result<Manifest, String> {
         let index = match self.free.binary_search_by(|node| node.size.cmp(&size)) {
             Ok(idx) => idx,
             Err(idx) => {
@@ -49,7 +50,7 @@ impl FreeList for VecFreeList {
         return Ok(m);
     }
 
-    fn release(&mut self, size:usize, address:usize) -> Result<(), String> {
+    fn release(&mut self, size:u64, address:u64) -> Result<(), String> {
         debug!("Releasing {} at {}", size, address);
         // TODO: check if the area being released overlaps a free area
         // TODO: check if the area being released is outside of max size

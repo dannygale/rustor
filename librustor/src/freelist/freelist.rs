@@ -1,16 +1,14 @@
-use log::{error, warn, info, debug, trace};
-
 use crate::object::Manifest;
 
 #[derive(Debug, PartialEq)]
 pub struct FreeListNode {
-    pub size: usize,
-    pub address: usize
+    pub size: u64,
+    pub address: u64
 }
 
 pub trait FreeList {
-    fn allocate(&mut self, size:usize) -> Result<Manifest, String>;
-    fn release(&mut self, size:usize, address:usize) -> Result<(), String>;
+    fn allocate(&mut self, size:u64) -> Result<Manifest, String>;
+    fn release(&mut self, size:u64, address:u64) -> Result<(), String>;
 }
 
 
