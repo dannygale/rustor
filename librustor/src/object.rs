@@ -27,12 +27,22 @@ impl Clone for Manifest {
     }
 }
 
+
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct ObjKey {
     pub uuid: Uuid,
     pub hash: u64,
     pub size: u64,
     pub manifest: Manifest,
+}
+
+impl Clone for ObjKey {
+    fn clone(&self) -> ObjKey {
+        ObjKey {
+            manifest: self.manifest.clone(),
+            ..*self
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -55,14 +65,6 @@ impl Object {
     }
 }
 
-impl Clone for ObjKey {
-    fn clone(&self) -> ObjKey {
-        ObjKey {
-            manifest: self.manifest.clone(),
-            ..*self
-        }
-    }
-}
 
 pub trait IsObject {
     fn get_uuid(&self) -> ObjectID;

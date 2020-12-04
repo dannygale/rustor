@@ -1,7 +1,9 @@
 #![allow(unused_imports)]
 pub mod blockstore;
+pub mod blockdevice;
 
-use blockstore::*;
+pub use blockstore::*;
+pub use blockdevice::*;
 
 /*
 #[derive(Debug, Default)]
