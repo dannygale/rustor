@@ -9,11 +9,46 @@ pub const BS4K:usize = 4096;
 use crate::object::ObjKey;
 use crate::RResult;
 pub trait BlockStore {
-    fn write_block(&mut self, lba: u64, data: [u8; BS4K]) -> RResult<()>;
-    fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> RResult<()>;
-    
     fn write(&mut self, data: &[u8], key: &ObjKey) -> RResult<()>;
     fn read(&mut self, data: &[u8], key: &ObjKey) -> RResult<()>;
 }
 
 
+use super::BasicBlockDevice;
+use super::BlockDevice;
+pub struct SingleDeviceBlockStore {
+    pub device: BasicBlockDevice,
+}
+
+impl SingleDeviceBlockStore {
+    fn new(path: PathBuf, capacity: u64) -> Self {
+        Self {
+            device : BasicBlockDevice::new(capacity, path)
+        }
+    }
+}
+
+impl BlockStore for SingleDeviceBlockStore {
+    #[allow(unused_variables)]
+    fn write(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
+        let len = data.len();
+        let cursor = 0;
+
+        for entry in key.manifest.shards.iter() {
+            let span = entry.span;
+            for n in 0..span-1 {
+                let lba:usize = (entry.lba + n) as usize;
+                let slice = &data[ (lba*BS4K) as usize .. (lba as usize+1)*BS4K - 1 ];
+                self.device.write_block(lba as u64, slice)?;
+            }
+        }
+        
+        Ok(())
+    }
+
+    #[allow(unused_variables)]
+    fn read(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
+
+        Ok(())
+    }
+}

@@ -9,8 +9,14 @@ use crate::object::ObjKey;
 
 use super::blockstore::*;
 
+pub trait BlockDevice {
+    fn write_block(&mut self, lba: u64, data: &[u8]) -> RResult<()>;
+    fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> RResult<()>;
+}
+
+
 #[derive(Debug)]
-pub struct BlockDevice {
+pub struct BasicBlockDevice {
     //bs: u32,
     capacity: u64,
     max_lba: u64,
@@ -18,7 +24,7 @@ pub struct BlockDevice {
     file: Option<File>,
 }
 
-impl Default for BlockDevice {
+impl Default for BasicBlockDevice {
     fn default() -> Self {
         Self {
             //bs: 4096,
@@ -30,20 +36,20 @@ impl Default for BlockDevice {
     }
 }
 
-impl BlockDevice {
-    fn new(/*bs: u32, */capacity: u64, path: PathBuf) -> BlockDevice {
+impl BasicBlockDevice {
+    pub fn new(/*bs: u32, */capacity: u64, path: PathBuf) -> Self {
         // TODO: validate block size
         // TODO: validate capacity is a multiple of blocksize
         // TODO: check path exists
 
         let mut file = Some(OpenOptions::new().write(true).read(true).create(false)
             .open(path.as_path()).unwrap());
-        BlockDevice { /*bs,*/ capacity, max_lba: capacity/BS4K as u64/*(bs as u64)*/, path, file }
+        BasicBlockDevice { /*bs,*/ capacity, max_lba: capacity/BS4K as u64/*(bs as u64)*/, path, file }
     }
 }
 
-impl BlockStore for BlockDevice {
-    fn write_block(&mut self, lba: u64, data: [u8; BS4K]) -> RResult<()> {
+impl BlockDevice for BasicBlockDevice {
+    fn write_block(&mut self, lba: u64, data: &[u8]) -> RResult<()> {
         // TODO: check that lba is within length of device
         
         if let Some(file) = &mut self.file {
@@ -82,18 +88,6 @@ impl BlockStore for BlockDevice {
             return GeneralError::new("Blockdevice::file is uninitialized");
         }
 
-    }
-
-    #[allow(unused_variables)]
-    fn write(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
-        
-        Ok(())
-    }
-
-    #[allow(unused_variables)]
-    fn read(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
-
-        Ok(())
     }
 }
 

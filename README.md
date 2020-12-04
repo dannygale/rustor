@@ -20,15 +20,17 @@
 2. `ObjectStore` asks  `KeyGen` to create `ObjKey` for object -- uuid, hash, and size
 3. `ObjectStore` asks `FreeList` to allocate space for the object
 4. `FreeList` provides `Manifest` to `ObjectStore`
-5. `ObjectStore` asks `KeyStore` to store `ObjKey` and `Manifest`
 6. `ObjectStore` asks `BlockStore` to write object blocks according to `Manifest`
-7. `ObjectStore` returns uuid to requester
+7. `BlockStore` writes data to `BlockDevice`
+8. `ObjectStore` asks `KeyStore` to store `ObjKey` and `Manifest`
+9. `ObjectStore` returns uuid to requester
 
 ### GET object
-1. `ObjectStore` receives ``GET <uuid>`` request
+1. `ObjectStore` receives `GET <uuid>` request
 2. `ObjectStore` asks `KeyStore` to retrieve `ObjKey` and `Manifest`
 3. `ObjectStore` asks `BlockStore` to retrieve object blocks according to `Manifest`
-4. `ObjectStore` returns `Object` to requester
+4. `BlockStore` accesses `BlockDevice` to read data
+5. `ObjectStore` returns `Object` to requester
 
 ### DELETE object
 1. `ObjectStore` receives `DELETE <uuid>` request
