@@ -3,6 +3,7 @@ use crate::freelist::{FreeList, FreeListNode};
 use crate::object::{Manifest, ManifestLocation};
 
 use log::{trace, debug, info, warn, error};
+use std::error::Error;
 
 #[derive(Debug)]
 pub struct VecFreeList {
@@ -21,17 +22,18 @@ impl VecFreeList {
     }
 }
 
+use crate::RResult;
+use crate::GeneralError;
+
 impl FreeList for VecFreeList {
-    fn allocate(&mut self, size:u64) -> Result<Manifest, String> {
+    fn allocate(&mut self, size:u64) -> RResult<Manifest> {
         let index = match self.free.binary_search_by(|node| node.size.cmp(&size)) {
             Ok(idx) => idx,
             Err(idx) => {
                 // didn't find something exactly the right size
                 // if we're at the end, return an error
                 if idx == self.free.len() {
-                    let s = String::from(format!("Could not allocate size {}", size));
-                    error!("Could not allocate size {}", size);
-                    return Err(s);
+                    return Err(Box::new(GeneralError("Could not allocate".to_string())));
                 }
                 idx
             }
@@ -45,20 +47,21 @@ impl FreeList for VecFreeList {
             self.free.remove(index);
         }
 
-        let m = Manifest { shards: Vec::new() };
+        let mut m = Manifest { shards: Vec::new() };
         m.shards.push(ManifestLocation { lba: address as u64, span: size as u64, blkdevid: None });
         return Ok(m);
     }
 
-    fn release(&mut self, size:u64, address:u64) -> Result<(), String> {
+    fn release(&mut self, size:u64, address:u64) -> RResult<()> {
         debug!("Releasing {} at {}", size, address);
+        // TODO: check if the area being freed is already free
         // TODO: check if the area being released overlaps a free area
         // TODO: check if the area being released is outside of max size
         // TODO: check if we're adjacent to another free area and combine
 
         let index = match self.free.binary_search_by(|node| node.size.cmp(&size)) {
             Ok(idx) => idx,
-            Err(idx) => idx
+            Err(idx) => idx, // this is fine, it just means this will be the largest free block
         };
         trace!("index: {}", index);
 

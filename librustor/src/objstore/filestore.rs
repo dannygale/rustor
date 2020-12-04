@@ -1,7 +1,8 @@
 #![allow(unused_imports)]
 use std::path::{PathBuf};
 use std::fs::{OpenOptions};
-use std::io::{Seek, SeekFrom, Read, Write, Error};
+use std::io::{Seek, SeekFrom, Read, Write/*, Error*/};
+use std::error::Error;
 
 // for data hashing
 use std::hash::Hasher;
@@ -64,10 +65,13 @@ impl Clone for FilestoreObjKey {
     }
 }
 
+use crate::RResult;
+use crate::GeneralError;
 use crate::object::{Manifest, ManifestLocation};
+/*
 impl StoresObjects for FileStore {
     // store a binary object. return its uuid
-    fn put(&mut self, data: &[u8]) -> Result<ObjectID, Error> {
+    fn put(&mut self, data: &[u8]) -> RResult<ObjectID> {
         debug!("put data: {:?}", &data);
 
         let mut objfile = OpenOptions::new()
@@ -84,9 +88,10 @@ impl StoresObjects for FileStore {
                 hash: 0,
                 size: data.len() as u64, 
                 manifest: Manifest { 
-                    shards: Vec::from([ManifestLocation::SingleBlockDevice { 
+                    shards: Vec::from([ManifestLocation { 
+                        blkdevid: None,
                         lba: objfile.seek(SeekFrom::End(0)).unwrap(),
-                        size: data.len() as u64
+                        span: data.len() as u64
                     } ]) 
                 }
             //offset: objfile.seek(SeekFrom::End(0)).unwrap()
@@ -104,62 +109,60 @@ impl StoresObjects for FileStore {
         // store object
         //write the object 
         let _bytes_written = objfile.write(data);
-        objfile.flush()?;
+        objfile.flush();
 
         Ok(key.uuid)
     }
 
-    fn get(&mut self, uuid: ObjectID) -> Result<Option<Vec<u8>>, Error> {
+    // TODO: return reference to Vec instaed of Vec itself
+    fn get(&mut self, uuid: ObjectID) -> RResult<Option<Vec<u8>>> {
         debug!("get uuid: {:?}", uuid);
 
         // retrieve key
         // look up uuid
-        let key = self.index.get(&uuid);
-        if key.is_none() { return Err(format!("No object with uuid {}", &uuid)); }
+        if let Some(key) = self.index.get(&uuid)? {
+            debug!("{:?}", &key);
 
-        let key = key.unwrap();
+            // create a vector for the data
+            let mut data = vec![0u8; key.size as usize];
+            debug!("vector capacity: {:?}", data.len());
 
-        debug!("{:?}", &key);
+            // retrieve data
+            // open the file, seek to the right spot, and read the data
+            let file = OpenOptions::new().read(true).open(&self.data_path)?;
+            let loc = key.manifest.shards[0];
+            file.seek(SeekFrom::Start(loc.lba))?;
+            let read_bytes = file.read(&mut data)?;
+            debug!("read {:?} bytes", read_bytes);
 
-        // create a vector for the data
-        let mut data = vec![0u8; key.size as usize];
-        debug!("vector capacity: {:?}", data.len());
+            return Ok(Some(data));
 
-        // retrieve data
-        // open the file, seek to the right spot, and read the data
-        let mut f = OpenOptions::new().read(true).open(&self.data_path)?;
-
-        let loc = key.manifest.shards[0];
-        f.seek(SeekFrom::Start(loc.lba))?;
-        let read_bytes = f.read(&mut data)?;
-        debug!("read {:?} bytes", read_bytes);
-
-        Ok(Some(data))
+        } else {
+            return Ok(None);
+        }
     }
 
-    fn delete(&mut self, uuid: ObjectID) -> Result<Option<ObjectID>, Error> {
+    fn delete(&mut self, uuid: ObjectID) -> RResult<Option<ObjectID>> {
         // retrieve key
         // TODO: separate key retrieval and deletion
-        let key = self.index.delete(&uuid)?;
-        if key.is_none() { return Err(format!("No object with uuid {}", &uuid)); }
+        if let Some(key) = self.index.delete(&uuid)? {
+            let shard = key.manifest.shards[0];
+            // zero-out data in data file
+            //  is this necessary?
+            let mut f = OpenOptions::new().write(true).open(&self.data_path)?;
+            f.seek(SeekFrom::Start(shard.lba))?;
+            f.write(&vec![0; key.size as usize])?;
 
-        let key = key.unwrap();
+            // TODO: delete key
+            // TODO: release space on freelist
 
-        let shard = key.manifest.shards[0];
+            return Ok(Some(uuid));
+        } 
 
-        // zero-out data in data file
-        //  is this necessary?
-        let mut f = OpenOptions::new().write(true).open(&self.data_path)?;
-        f.seek(SeekFrom::Start(shard.lba))?;
-        f.write(&vec![0; key.size as usize])?;
-
-        // TODO: delete key
-        // TODO: release space on freelist
-
-        Ok(Some(uuid))
+        Ok(None)
     }
 }
-
+*/
 
 #[cfg(test)]
 mod test {

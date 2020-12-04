@@ -12,6 +12,7 @@ use log::{trace, debug, info, warn, error};
 
 //use crate::object::ObjKey;
 use crate::keystore::KeyStore;
+use crate::RResult;
 
 // to be re-constructable from JSON, this HashMap must contain objects, not references (T, not &T)
 type Index<T> = HashMap<Uuid, T>;
@@ -47,7 +48,7 @@ impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
         Ok(v)
     }
 
-    fn write_index(&self) -> io::Result<()> {
+    fn write_index(&self) -> RResult<()> {
         trace!("Writing index at {}", self.path.to_str().unwrap());
         let idxfile = OpenOptions::new()
             .create(true)
@@ -71,18 +72,18 @@ impl<T> Default for JsonKeystore<T> where T: Serialize + DeserializeOwned {
 }
 
 impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
-    fn set<'a>(&mut self, uuid: Uuid, key: T) -> Option<T>
+    fn set<'a>(&mut self, uuid: Uuid, key: T) -> RResult<Option<T>>
     {
-        let resp = self.keystore.insert(uuid, key);
-        self.write_index().unwrap();
-        resp
+        let resp = self.keystore.insert(uuid, key).ok_or("Could not insert")?;
+        self.write_index()?;
+        Ok(Some(resp))
     }
-    fn get(&self, uuid: &Uuid) -> Option<&T> {
+    fn get(&self, uuid: &Uuid) -> RResult<Option<&T>> {
         let resp = self.keystore.get(uuid);
-        self.write_index().unwrap();
-        resp
+        //self.write_index().unwrap();
+        Ok(resp)
     }
-    fn delete(&mut self, uuid: &Uuid) -> io::Result<Option<T>> {
+    fn delete(&mut self, uuid: &Uuid) -> RResult<Option<T>> {
         let key = self.keystore.remove(uuid);
         self.write_index()?;
         Ok(key)

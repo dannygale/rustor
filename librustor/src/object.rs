@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 pub type ObjectID = Uuid;
 pub type BlkDevID = Uuid;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct ManifestLocation {
     pub blkdevid: Option<BlkDevID>,
     /// starting LBA
@@ -21,6 +21,11 @@ pub struct Manifest {
     pub shards: Vec<ManifestLocation>,
 }
 
+impl Clone for Manifest {
+    fn clone(&self) -> Self {
+        Self { shards: self.shards.to_vec() }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct ObjKey {
@@ -52,7 +57,10 @@ impl Object {
 
 impl Clone for ObjKey {
     fn clone(&self) -> ObjKey {
-        ObjKey {..*self}
+        ObjKey {
+            manifest: self.manifest.clone(),
+            ..*self
+        }
     }
 }
 

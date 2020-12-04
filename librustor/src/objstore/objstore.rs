@@ -1,5 +1,4 @@
 use uuid::Uuid;
-use std::io::Error;
 
 use crate::blockstore::blockstore::{ BlockStore };//, BlockDevice };
 use crate::object::ObjKey;
@@ -11,38 +10,45 @@ pub type ObjectID = Uuid;
 
 /// An ObjectStore is the top-level interface to put, get, or delete stored data
 pub trait StoresObjects {
-    fn put(&mut self, data: &[u8]) -> Result<ObjectID, Error>;
-    fn get(&mut self, uuid: ObjectID) -> Result<Option<Vec<u8>>, Error>;
-    fn delete(&mut self, uuid: ObjectID) -> Result<Option<ObjectID>, Error>;
+    fn put(&mut self, data: &[u8]) -> RResult<ObjectID>;
+    fn get(&mut self, uuid: ObjectID) -> RResult<Option<Vec<u8>>>;
+    fn delete(&mut self, uuid: ObjectID) -> RResult<Option<ObjectID>>;
 }
 
 pub struct ObjectStore<'a> {
-    blockstore: &'a dyn BlockStore,
-    freelist: &'a dyn FreeList,
+    blockstore: &'a mut dyn BlockStore,
+    freelist: &'a mut dyn FreeList,
     keygen: KeyGen,
-    keystore: &'a dyn KeyStore<ObjKey>,
+    keystore: &'a mut dyn KeyStore<ObjKey>,
 }
 
-impl StoresObjects for ObjectStore<'_> {
-    fn put(&mut self, data: &[u8]) -> Result<ObjectID, Error> {
-        let mut key = self.keygen.make_key(data);
-        key.manifest = self.freelist.allocate(key.size)?;
-        self.blockstore.write(data, &key);
-        self.keystore.set(key.uuid, key);
+use crate::RResult;
 
-        Ok(key.uuid)
+impl StoresObjects for ObjectStore<'_> {
+    fn put(&mut self, data: &[u8]) -> RResult<ObjectID> {
+        let mut key = self.keygen.make_key(data)?;
+        key.manifest = self.freelist.allocate(key.size)?;
+        self.blockstore.write(data, &key)?;
+        let uuid = key.uuid.clone();
+        self.keystore.set(key.uuid, key)?;
+
+        Ok(uuid)
     }
-    fn get(&mut self, uuid: ObjectID) -> Result<Option<Vec<u8>>, Error> {
-        if let Some(key) = self.keystore.get(&uuid) {
-            let data = self.blockstore.read(&key);
+
+    fn get(&mut self, uuid: ObjectID) -> RResult<Option<Vec<u8>>> {
+        if let Some(key) = self.keystore.get(&uuid)? {
+            let mut data = Vec::new();
+            self.blockstore.read(&mut data, &key)?;
+            return Ok(Some(data));
         } else {
             return Ok(None);
         }
-
-        return Ok(None);
     }
-    fn delete(&mut self, uuid: ObjectID) -> Result<Option<ObjectID>, Error> {
 
+    #[allow(unused_variables)]
+    fn delete(&mut self, uuid: ObjectID) -> RResult<Option<ObjectID>> {
+
+        Ok(None)
     }
 }
 

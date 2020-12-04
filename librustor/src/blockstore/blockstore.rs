@@ -39,62 +39,67 @@ impl BlockDevice {
 }
 
 use crate::object::ObjKey;
+use crate::RResult;
 pub trait BlockStore {
-    fn write_block(&mut self, lba: u64, data: [u8; BS4K]) -> Result<(), String>;
-    fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> Result<(), String>;
+    fn write_block(&mut self, lba: u64, data: [u8; BS4K]) -> RResult<()>;
+    fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> RResult<()>;
     
-    fn write(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String>;
-    fn read(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String>;
+    fn write(&mut self, data: &[u8], key: &ObjKey) -> RResult<()>;
+    fn read(&mut self, data: &[u8], key: &ObjKey) -> RResult<()>;
 }
 
 
+use crate::GeneralError;
 impl BlockStore for BlockDevice {
-    fn write_block(&mut self, lba: u64, data: [u8; BS4K]) -> Result<(), String> {
+    fn write_block(&mut self, lba: u64, data: [u8; BS4K]) -> RResult<()> {
         // TODO: check that lba is within length of device
         
         if let Some(file) = &mut self.file {
             if let Err(error) = file.seek(SeekFrom::Start(lba*BS4K as u64/*self.bs*/)) {
-                return Err(error.to_string());
+                return GeneralError::from(error);
             }
-            let bytes_written = file.write(&data);
 
+            #[allow(unused_variables)]
+            let bytes_written = file.write(&data);
             // TODO: check that bytes written is the expected length
 
             if let Err(error) = file.flush() {
-                return Err(error.to_string());
+                return GeneralError::from(error);
             }
             return Ok(());
         } else {
-            return Err("Blockdevice::file is uninitialized".to_string());
+            return GeneralError::new("Blockdevice::file is uninitialized");
         }
 
     }
-    fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> Result<(), String> {
+    fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> RResult<()> {
         // TODO: check that lba is in range
 
         if let Some(file) = &mut self.file {
             if let Err(error) = file.seek(SeekFrom::Start(lba*BS4K as u64/*self.bs*/)) {
-                return Err(error.to_string());
+                return GeneralError::from(error);
             }
             if let Err(error) = file.read(data) {
-                return Err(error.to_string());
+                return GeneralError::from(error);
             }
 
             // TODO: check that bytes read is the expected length
 
             return Ok(());
         } else {
-            return Err("Blockdevice::file is uninitialized".to_string());
+            return GeneralError::new("Blockdevice::file is uninitialized");
         }
 
     }
 
-    fn write(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String> {
+    #[allow(unused_variables)]
+    fn write(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
         
         Ok(())
     }
 
-    fn read(&mut self, data: &[u8], key: &ObjKey) -> Result<(), String> {
+    #[allow(unused_variables)]
+    fn read(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
 
         Ok(())
     }

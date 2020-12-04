@@ -1,4 +1,3 @@
-use std::io;
 use uuid::Uuid;
 
 use serde::{Serialize};
@@ -6,10 +5,11 @@ use serde::de::DeserializeOwned;
 
 //use crate::object::ObjKey;
 
+use crate::RResult;
 pub trait KeyStore<T: Serialize + DeserializeOwned> {
-    fn set(&mut self, uuid: Uuid, object: T) -> Option<T>;
-    fn get(&self, uuid: &Uuid) -> Option<&T>;
-    fn delete(&mut self, uuid: &Uuid) -> io::Result<Option<T>>;
+    fn set(&mut self, uuid: Uuid, object: T) -> RResult<Option<T>>;
+    fn get(&self, uuid: &Uuid) -> RResult<Option<&T>>;
+    fn delete(&mut self, uuid: &Uuid) -> RResult<Option<T>>;
 
     //fn mset(&self, objects: &HashMap<Uuid, T>) -> io::Result<HashMap<Uuid, io::Result<()>>>;
     //fn mget(&self, uuids: Vec<Uuid>) -> io::Result<HashMap<Uuid, io::Result<T>>>;
