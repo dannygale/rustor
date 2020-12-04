@@ -11,7 +11,7 @@ pub struct VecFreeList {
 }
 
 impl VecFreeList {
-    fn new(size:u64) -> Self {
+    pub fn new(size:u64) -> Self {
         let mut s = Self {
             free: Vec::new(),
         };

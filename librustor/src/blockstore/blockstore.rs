@@ -21,7 +21,7 @@ pub struct SingleDeviceBlockStore {
 }
 
 impl SingleDeviceBlockStore {
-    fn new(path: PathBuf, capacity: u64) -> Self {
+    pub fn new(path: PathBuf, capacity: u64) -> Self {
         Self {
             device : BasicBlockDevice::new(capacity, path)
         }

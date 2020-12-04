@@ -9,13 +9,13 @@ use crate::freelist::{ FreeList}; //, VecFreeList };
 pub type ObjectID = Uuid;
 
 /// An ObjectStore is the top-level interface to put, get, or delete stored data
-pub trait StoresObjects {
+pub trait ObjectStore {
     fn put(&mut self, data: &[u8]) -> RResult<ObjectID>;
     fn get(&mut self, uuid: ObjectID) -> RResult<Option<Vec<u8>>>;
     fn delete(&mut self, uuid: ObjectID) -> RResult<Option<ObjectID>>;
 }
 
-pub struct ObjectStore<'a> {
+pub struct BasicObjectStore<'a> {
     blockstore: &'a mut dyn BlockStore,
     freelist: &'a mut dyn FreeList,
     keygen: KeyGen,
@@ -24,7 +24,16 @@ pub struct ObjectStore<'a> {
 
 use crate::RResult;
 
-impl StoresObjects for ObjectStore<'_> {
+impl<'a> BasicObjectStore<'a> {
+    pub fn new(blockstore: &'a mut dyn BlockStore, 
+        freelist: &'a mut dyn FreeList,
+        keygen: KeyGen,
+        keystore: &'a mut dyn KeyStore<ObjKey>) -> Self {
+        Self { blockstore, freelist, keygen, keystore }
+    }
+}
+
+impl ObjectStore for BasicObjectStore<'_> {
     fn put(&mut self, data: &[u8]) -> RResult<ObjectID> {
         let mut key = self.keygen.make_key(data)?;
         key.manifest = self.freelist.allocate(key.size)?;
