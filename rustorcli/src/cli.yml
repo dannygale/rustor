@@ -4,15 +4,20 @@ author: Danny Gale <danny.gale@gale-labs.com>
 about: a standalone demonstration for basic rustor functionality
 args:
   - keystore:
+      long: keystore
       value_name: KEYSTORE
       help: JSON file to use as a keystore
-      required: true
+      required: false
+      takes_value: true
   - objstore:
+      long: objstore
       value_name: OBJSTORE
       help: Object storage file
-      required: true
+      required: false
+      takes_value: true
   - interactive:
       short: i
+      long: interactive
       help: use interactive prompt
       required: false
 
@@ -20,14 +25,10 @@ subcommands:
   - put:
       about: store a key/object pair
       args:
-        - key:
-            help: Key to store the object under
-            required: true
-            index: 1
         - data:
             help: data to be stored
             required: true
-            index: 2
+            index: 1
   - get:
       about: retrieve an object by key
       args:

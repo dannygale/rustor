@@ -34,12 +34,15 @@ impl BlockStore for SingleDeviceBlockStore {
     fn write(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
         debug!("write object {:?}, size {:?}", &key.uuid, &key.size);
         for entry in key.manifest.shards.iter() {
+            debug!("entry: {:?}", &entry);
             let span = entry.span;
-            debug!("span: {}", &span);
-            for n in 0..span-1 {
-                let lba:usize = (entry.lba + n) as usize;
-                let slice = &data[ (lba*BS4K) as usize .. (lba as usize+1)*BS4K - 1 ];
+            let mut start = 0;
+            for n in 0..span {
+                let lba:u64 = entry.lba + n;
+                let end = if data.len() - n as usize * BS4K < BS4K { data.len() - n as usize * BS4K } else { BS4K };
+                let slice = &data[ start .. end ];
                 self.device.write_block(lba as u64, slice)?;
+                start += BS4K;
             }
         }
         

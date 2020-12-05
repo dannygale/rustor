@@ -5,18 +5,20 @@ use crate::object::{Manifest, ManifestLocation};
 use log::{trace, debug, info, warn, error};
 use std::error::Error;
 
+use crate::blockstore::BS4K;
+
 #[derive(Debug)]
 pub struct VecFreeList {
     free: Vec<FreeListNode>,
 }
 
 impl VecFreeList {
-    pub fn new(size:u64) -> Self {
+    pub fn new(span:u64) -> Self {
         let mut s = Self {
             free: Vec::new(),
         };
 
-        let new_node = FreeListNode { size, address: 0 };
+        let new_node = FreeListNode { span, address: 0 };
         s.free.push(new_node);
         s
     }
@@ -26,46 +28,49 @@ use crate::RResult;
 use crate::GeneralError;
 
 impl FreeList for VecFreeList {
-    fn allocate(&mut self, size:u64) -> RResult<Manifest> {
-        let index = match self.free.binary_search_by(|node| node.size.cmp(&size)) {
+    fn allocate(&mut self, size_bytes:u64) -> RResult<Manifest> {
+        let mut span = size_bytes / BS4K as u64;
+        if size_bytes as usize & (BS4K - 1) != 0 { span += 1; }
+
+        let index = match self.free.binary_search_by(|node| node.span.cmp(&span)) {
             Ok(idx) => idx,
             Err(idx) => {
                 // didn't find something exactly the right size
                 // if we're at the end, return an error
                 if idx == self.free.len() {
-                    return Err(Box::new(GeneralError("Could not allocate".to_string())));
+                    return Err("Could not allocate")?;
                 }
                 idx
             }
         };
         let node = &mut self.free[index];
         let address = node.address;
-        debug!("allocated {} at {}", size, address);
-        node.size -= size;
-        node.address += size;
-        if node.size == 0 {
+        debug!("allocated {} blocks at {}", span, address);
+        node.span -= span;
+        node.address += span;
+        if node.span == 0 {
             self.free.remove(index);
         }
 
         let mut m = Manifest { shards: Vec::new() };
-        m.shards.push(ManifestLocation { lba: address as u64, span: size as u64, blkdevid: None });
+        m.shards.push(ManifestLocation { lba: address as u64, span: span as u64, blkdevid: None });
         return Ok(m);
     }
 
-    fn release(&mut self, size:u64, address:u64) -> RResult<()> {
-        debug!("Releasing {} at {}", size, address);
+    fn release(&mut self, span:u64, address:u64) -> RResult<()> {
+        debug!("Releasing {} blocks at {}", span, address);
         // TODO: check if the area being freed is already free
         // TODO: check if the area being released overlaps a free area
         // TODO: check if the area being released is outside of max size
         // TODO: check if we're adjacent to another free area and combine
 
-        let index = match self.free.binary_search_by(|node| node.size.cmp(&size)) {
+        let index = match self.free.binary_search_by(|node| node.span.cmp(&span)) {
             Ok(idx) => idx,
             Err(idx) => idx, // this is fine, it just means this will be the largest free block
         };
         trace!("index: {}", index);
 
-        self.free.insert(index, FreeListNode { size, address });
+        self.free.insert(index, FreeListNode { span, address });
 
         Ok(())
     }

@@ -71,12 +71,14 @@ impl<T> Default for JsonKeystore<T> where T: Serialize + DeserializeOwned {
     }
 }
 
-impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned {
+use std::fmt;
+impl<T> KeyStore<T> for JsonKeystore<T> where T: Serialize + DeserializeOwned + fmt::Debug {
     fn set<'a>(&mut self, uuid: Uuid, key: T) -> RResult<Option<T>>
     {
-        let resp = self.keystore.insert(uuid, key).ok_or("Could not insert")?;
+        trace!("uuid: {:?}, key: {:?}", &uuid, &key);
+        let resp = self.keystore.insert(uuid, key);
         self.write_index()?;
-        Ok(Some(resp))
+        Ok(resp)
     }
     fn get(&self, uuid: &Uuid) -> RResult<Option<&T>> {
         let resp = self.keystore.get(uuid);

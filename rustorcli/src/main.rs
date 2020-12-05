@@ -54,13 +54,13 @@ fn main() -> RResult<()> {
     let keystore_file = matches.value_of("KEYSTORE").unwrap_or("keys.json");
     let objstore_file = matches.value_of("OBJSTORE").unwrap_or("data.bin");
     
-    let interactive = matches.is_present("interactive");
-    debug!("interactive: {:?}", interactive);
+    let interactive: bool = matches.is_present("interactive");
+    debug!("{:#?}", matches);
 
     let size = 1024*1024;
     let mut bs = SingleDeviceBlockStore::new(PathBuf::from(objstore_file), size);
     let mut fl = VecFreeList::new(size);
-    let mut kg = keygen::KeyGen {};
+    let kg = keygen::KeyGen {};
     let mut ks = keystore::JsonKeystore::new(PathBuf::from(keystore_file));
 
     let mut fs = BasicObjectStore::new(&mut bs, &mut fl, kg, &mut ks);
@@ -79,6 +79,33 @@ fn main() -> RResult<()> {
     debug!("{:?}", data);
     */
 
+    if interactive { return interactive_loop(&mut fs); }
+
+    if let Some(subcommand) = matches.subcommand_name() {
+        debug!("subcommand: {:#?}", &subcommand);
+        if let Some(ref matches) = matches.subcommand_matches(subcommand) { 
+            debug!("subcommand matches: {:#?}", &matches);
+            match subcommand {
+                "put" => {
+                    let uuid = fs.put(matches.value_of("data").unwrap().as_bytes())?;
+                    info!("uuid: {:?}", &uuid);
+                }
+                "get" => {
+
+                }
+                "delete" => {
+
+                }
+                _ => Err(format!("Unknown subcommand: {}", subcommand))?
+            }
+        }
+    }
+
+    Ok(())
+}
+
+
+fn interactive_loop(fs: &mut impl ObjectStore) -> RResult<()> {
     loop {
         print!("> ");
         io::stdout().flush()?;
@@ -86,7 +113,7 @@ fn main() -> RResult<()> {
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
         input.truncate(input.len() - 1);
-        
+
         let tokens: Vec<&str> = input.split(" ").collect();
         debug!("{:?}", tokens);
 
@@ -117,13 +144,13 @@ fn main() -> RResult<()> {
                 debug!("{:?}", result);
             },
             /*
-            "objects" => {
-                let objects = fs.get_objects();
-                for (uuid, key) in objects {
-                    debug!("{:?}", key)
-                }
-            }
-            */
+               "objects" => {
+               let objects = fs.get_objects();
+               for (uuid, key) in objects {
+               debug!("{:?}", key)
+               }
+               }
+               */
             _ => {
                 debug!("Unknown command: {:?}", cmd);
             }

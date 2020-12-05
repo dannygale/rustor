@@ -1,16 +1,16 @@
 use crate::object::Manifest;
 
-use std::error::Error;
+use crate::RResult;
 
 #[derive(Debug, PartialEq)]
 pub struct FreeListNode {
-    pub size: u64,
+    pub span: u64,
     pub address: u64
 }
 
 pub trait FreeList {
-    fn allocate(&mut self, size:u64) -> Result<Manifest, &(dyn Error)>;
-    fn release(&mut self, size:u64, address:u64) -> Result<(), &(dyn Error)>;
+    fn allocate(&mut self, span:u64) -> RResult<Manifest>;
+    fn release(&mut self, span:u64, address:u64) -> RResult<()>;
 }
 
 

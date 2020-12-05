@@ -5,4 +5,5 @@ target
 pkg
 data.bin
 data.json
+keys.json
 tags

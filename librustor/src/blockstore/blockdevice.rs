@@ -9,6 +9,9 @@ use crate::object::ObjKey;
 
 use super::blockstore::*;
 
+#[allow(unused_imports)]
+use log::{trace, debug, info, warn, error};
+
 pub trait BlockDevice {
     fn write_block(&mut self, lba: u64, data: &[u8]) -> RResult<()>;
     fn read_block(&mut self, lba: u64, data: &mut[u8; BS4K]) -> RResult<()>;
@@ -53,6 +56,7 @@ impl BlockDevice for BasicBlockDevice {
     fn write_block(&mut self, lba: u64, data: &[u8]) -> RResult<()> {
         // TODO: check that lba is within length of device
         
+        trace!("write block: lba {:?}, data: {:?}", &lba, data.len());
         if let Some(file) = &mut self.file {
             if let Err(error) = file.seek(SeekFrom::Start(lba*BS4K as u64/*self.bs*/)) {
                 return GeneralError::from(error);

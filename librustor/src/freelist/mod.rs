@@ -11,9 +11,13 @@
 pub mod vecfreelist;
 pub use vecfreelist::VecFreeList;
 
-use crate::object::Manifest;
-use crate::RResult;
+//use crate::object::Manifest;
+//use crate::RResult;
 
+pub mod freelist;
+pub use freelist::*;
+
+/*
 #[derive(Debug, PartialEq)]
 pub struct FreeListNode {
     pub size: u64,
@@ -24,6 +28,7 @@ pub trait FreeList {
     fn allocate(&mut self, size:u64) -> RResult<Manifest>;
     fn release(&mut self, size:u64, address:u64) -> RResult<()>;
 }
+*/
 
 /*
 #[derive(Debug)]

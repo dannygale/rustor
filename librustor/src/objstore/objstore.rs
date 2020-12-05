@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+use crate::RResult;
 use crate::blockstore::blockstore::{ BlockStore };//, BlockDevice };
 use crate::object::ObjKey;
 use crate::keystore::KeyStore;
@@ -22,7 +23,6 @@ pub struct BasicObjectStore<'a> {
     keystore: &'a mut dyn KeyStore<ObjKey>,
 }
 
-use crate::RResult;
 
 impl<'a> BasicObjectStore<'a> {
     pub fn new(blockstore: &'a mut dyn BlockStore, 
