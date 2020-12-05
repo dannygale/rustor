@@ -42,7 +42,8 @@ impl BasicBlockDevice {
         // TODO: validate capacity is a multiple of blocksize
         // TODO: check path exists
 
-        let mut file = Some(OpenOptions::new().write(true).read(true).create(false)
+        let mut file = Some(OpenOptions::new().write(true).read(true)
+            .create(true)
             .open(path.as_path()).unwrap());
         BasicBlockDevice { /*bs,*/ capacity, max_lba: capacity/BS4K as u64/*(bs as u64)*/, path, file }
     }

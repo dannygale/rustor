@@ -2,6 +2,7 @@
 use std::path::PathBuf;
 use std::io::{Seek, SeekFrom, Read, Write, Error};
 use std::fs::{File, OpenOptions};
+use log::{trace, debug, info, warn, error};
 
 pub const BS4K:usize = 4096;
 
@@ -31,11 +32,10 @@ impl SingleDeviceBlockStore {
 impl BlockStore for SingleDeviceBlockStore {
     #[allow(unused_variables)]
     fn write(&mut self, data: &[u8], key: &ObjKey) -> RResult<()> {
-        let len = data.len();
-        let cursor = 0;
-
+        debug!("write object {:?}, size {:?}", &key.uuid, &key.size);
         for entry in key.manifest.shards.iter() {
             let span = entry.span;
+            debug!("span: {}", &span);
             for n in 0..span-1 {
                 let lba:usize = (entry.lba + n) as usize;
                 let slice = &data[ (lba*BS4K) as usize .. (lba as usize+1)*BS4K - 1 ];

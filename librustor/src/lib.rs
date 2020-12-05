@@ -14,7 +14,7 @@ pub use blockstore::{BlockStore, BlockDevice};
 pub use freelist::*;
 
 use std::error::Error;
-type RResult<T> = Result<T, Box<dyn Error>>;
+pub type RResult<T> = Result<T, Box<dyn Error>>;
 
 pub struct GeneralError(String);
 

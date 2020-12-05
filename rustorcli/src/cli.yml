@@ -1,0 +1,44 @@
+name: rustorcli
+version: "1.0"
+author: Danny Gale <danny.gale@gale-labs.com>
+about: a standalone demonstration for basic rustor functionality
+args:
+  - keystore:
+      value_name: KEYSTORE
+      help: JSON file to use as a keystore
+      required: true
+  - objstore:
+      value_name: OBJSTORE
+      help: Object storage file
+      required: true
+  - interactive:
+      short: i
+      help: use interactive prompt
+      required: false
+
+subcommands:
+  - put:
+      about: store a key/object pair
+      args:
+        - key:
+            help: Key to store the object under
+            required: true
+            index: 1
+        - data:
+            help: data to be stored
+            required: true
+            index: 2
+  - get:
+      about: retrieve an object by key
+      args:
+        - key:
+            help: Key to retrieve
+            required: true
+            index: 1
+  - delete: 
+      about: delete a key/object pair
+      args:
+        - key:
+            help: key to delete
+            required: true
+            index: 1

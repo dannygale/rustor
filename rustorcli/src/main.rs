@@ -1,5 +1,8 @@
-extern crate rustor;
-use rustor::*;
+extern crate librustor;
+use librustor::*;
+use librustor::RResult;
+use librustor::objstore::BasicObjectStore;
+use librustor::blockstore::SingleDeviceBlockStore;
 
 use std::path::PathBuf;
 use std::str;
@@ -8,7 +11,21 @@ use std::io::prelude::*;
 use std::io;
 //use std::fs::File;
 
-fn main() -> io::Result<()> {
+#[macro_use]
+extern crate clap;
+use clap::App;
+
+
+use log;
+#[allow(unused_imports)]
+use log::{trace, debug, info, warn, error};
+use env_logger;
+
+
+
+fn main() -> RResult<()> {
+
+    env_logger::init();
 
     // PUT an object:
     //  get object size
@@ -31,20 +48,35 @@ fn main() -> io::Result<()> {
     //  remove the data from storage
     //  update the freelist to include the freed data
 
-    let mut fs = FileStore::new(PathBuf::from("."));
+    let yaml = load_yaml!("cli.yml");
+    let matches = App::from_yaml(yaml).get_matches();
+
+    let keystore_file = matches.value_of("KEYSTORE").unwrap_or("keys.json");
+    let objstore_file = matches.value_of("OBJSTORE").unwrap_or("data.bin");
+    
+    let interactive = matches.is_present("interactive");
+    debug!("interactive: {:?}", interactive);
+
+    let size = 1024*1024;
+    let mut bs = SingleDeviceBlockStore::new(PathBuf::from(objstore_file), size);
+    let mut fl = VecFreeList::new(size);
+    let mut kg = keygen::KeyGen {};
+    let mut ks = keystore::JsonKeystore::new(PathBuf::from(keystore_file));
+
+    let mut fs = BasicObjectStore::new(&mut bs, &mut fl, kg, &mut ks);
 
     /*
     let uuid = fs.put("asdfqwerty1234".as_bytes()).unwrap();
-    println!("uuid: {}", uuid);
+    debug!("uuid: {}", uuid);
 
     let data = fs.get(uuid).unwrap().unwrap();
-    println!("get returned {} bytes: {}", data.len(), String::from_utf8(data).unwrap());
+    debug!("get returned {} bytes: {}", data.len(), String::from_utf8(data).unwrap());
 
     //fs.delete(uuid).unwrap();
-    //println!("deleted {}", uuid);
+    //debug!("deleted {}", uuid);
 
     let data = fs.get(uuid).unwrap().unwrap();
-    println!("{:?}", data);
+    debug!("{:?}", data);
     */
 
     loop {
@@ -56,7 +88,7 @@ fn main() -> io::Result<()> {
         input.truncate(input.len() - 1);
         
         let tokens: Vec<&str> = input.split(" ").collect();
-        println!("{:?}", tokens);
+        debug!("{:?}", tokens);
 
         let cmd = String::from(tokens[0]);
 
@@ -64,12 +96,12 @@ fn main() -> io::Result<()> {
         if tokens.len() == 2 {
             arg.push_str(tokens[1]);
         } 
-        println!("{:?}: {:?}", cmd, arg);
+        debug!("{:?}: {:?}", cmd, arg);
 
         match cmd.as_str() {
             "put" => { 
                 let uuid = fs.put(arg.as_bytes())?;
-                println!("uuid: {:?}", uuid);
+                debug!("uuid: {:?}", uuid);
             },
             "get" => {
                 let uuid = Uuid::parse_str(arg.as_str()).unwrap();
@@ -77,21 +109,23 @@ fn main() -> io::Result<()> {
                     Some(d) => d,
                     None => Vec::new()
                 };
-                println!("data: {:?}", data);
+                debug!("data: {:?}", data);
             },
             "delete" => {
                 let uuid = Uuid::parse_str(arg.as_str()).unwrap();
                 let result = fs.delete(uuid);
-                println!("{:?}", result);
+                debug!("{:?}", result);
             },
+            /*
             "objects" => {
                 let objects = fs.get_objects();
                 for (uuid, key) in objects {
-                    println!("{:?}", key)
+                    debug!("{:?}", key)
                 }
             }
+            */
             _ => {
-                println!("Unknown command: {:?}", cmd);
+                debug!("Unknown command: {:?}", cmd);
             }
         }
     }
