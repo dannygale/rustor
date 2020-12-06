@@ -18,26 +18,30 @@ use crate::RResult;
 type Index<T> = HashMap<Uuid, T>;
 
 #[derive(Debug)]
-pub struct JsonKeystore<T: Serialize + DeserializeOwned> {
-    keystore: Index<T>,
+pub struct JsonKeystore<T: Serialize + DeserializeOwned + fmt::Debug> {
+    pub keystore: Index<T>,
     path: PathBuf,
 }
 
-impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
+impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned + fmt::Debug {
     pub fn new(path: PathBuf) -> Self {
         let mut s = Self {
             keystore: Index::new(),
             path: path
         };
 
-        s.keystore = match s.read_index() {
-            Ok(index) => index,
-            _ => Index::new()
-        };
+        if let Ok(index) = s.read_index() {
+            debug!("successfully read index from file");
+            trace!("keys: {:#?}", &index.keys().collect::<Vec<_>>());
+            s.keystore = index;
+        } else {
+            debug!("could not read index from file");
+        }
+
         s
     }
 
-    fn read_index(&self) -> io::Result<Index<T>> {
+    fn read_index(&self) -> RResult<Index<T>> {
         trace!("Opening index at {}", self.path.to_str().unwrap());
         let indexfile = OpenOptions::new()
             .read(true)
@@ -65,7 +69,7 @@ impl<'a, T> JsonKeystore<T> where T: Serialize + DeserializeOwned {
     }
 }
 
-impl<T> Default for JsonKeystore<T> where T: Serialize + DeserializeOwned {
+impl<T> Default for JsonKeystore<T> where T: Serialize + DeserializeOwned + fmt::Debug {
     fn default() -> Self {
         Self::new(PathBuf::from("data.json"))
     }

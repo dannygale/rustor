@@ -4,6 +4,7 @@ use crate::object::{Manifest, ManifestLocation};
 
 use log::{trace, debug, info, warn, error};
 use std::error::Error;
+use std::rc::Rc;
 
 use crate::blockstore::BS4K;
 
@@ -18,7 +19,7 @@ impl VecFreeList {
             free: Vec::new(),
         };
 
-        let new_node = FreeListNode { span, address: 0 };
+        let new_node = FreeListNode { blkdevid: None, span, address: 0 };
         s.free.push(new_node);
         s
     }
@@ -70,7 +71,49 @@ impl FreeList for VecFreeList {
         };
         trace!("index: {}", index);
 
-        self.free.insert(index, FreeListNode { span, address });
+        self.free.insert(index, FreeListNode { blkdevid: None, span, address });
+
+        Ok(())
+    }
+
+
+    fn take(&mut self, span:u64, lba: u64) -> RResult<()> {
+        let index = match self.free.binary_search_by(|node| node.span.cmp(&span)) {
+            Ok(idx) => idx,
+            Err(idx) => {
+                // if there is no block exactly span size, If the value is not found then
+                // Result::Err is returned, containing the index where a matching element could be
+                // inserted while maintaining sorted order.
+                // if we're at the end, then there is no span big enough to allocate
+                if idx == self.free.len() {
+                    return Err("Could not allocate")?;
+                }
+                idx
+            }
+        };
+        let node = &mut self.free[index];
+        // allocate at address, shrink by span
+        node.span -= span;
+        node.address += span;
+        if node.span == 0 {
+            self.free.remove(index);
+        }
+
+        Ok(())
+    }
+    fn free(&mut self, span:u64, lba: u64) -> RResult<()> {
+        // 
+        Ok(())
+    }
+}
+
+use crate::freelist::FreeListFromKeys;
+use crate::object::ObjKey;
+impl FreeListFromKeys for VecFreeList {
+    fn from_keys<'a, I>(&mut self, keys: I) -> RResult<()> where I: Iterator<Item=&'a ObjKey> {
+        for key in keys {
+
+        }
 
         Ok(())
     }

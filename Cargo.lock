@@ -322,6 +322,9 @@ dependencies = [
 name = "rustor"
 version = "0.1.0"
 dependencies = [
+ "clap",
+ "env_logger",
+ "librustor",
  "log",
  "proptest",
  "serde",

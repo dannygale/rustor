@@ -1,4 +1,3 @@
-extern crate librustor;
 use librustor::*;
 use librustor::RResult;
 use librustor::objstore::BasicObjectStore;
@@ -62,6 +61,11 @@ fn main() -> RResult<()> {
     let mut fl = VecFreeList::new(size);
     let kg = keygen::KeyGen {};
     let mut ks = keystore::JsonKeystore::new(PathBuf::from(keystore_file));
+
+    // reconstruct free list from keystore
+    for obj in ks.keystore.values() {
+        
+    }
 
     let mut fs = BasicObjectStore::new(&mut bs, &mut fl, kg, &mut ks);
 

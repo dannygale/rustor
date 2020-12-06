@@ -30,13 +30,14 @@
 2. `ObjectStore` asks `KeyStore` to retrieve `ObjKey` and `Manifest`
 3. `ObjectStore` asks `BlockStore` to retrieve object blocks according to `Manifest`
 4. `BlockStore` accesses `BlockDevice` to read data
-5. `ObjectStore` returns `Object` to requester
+6. `ObjectStore` returns `Object` to requester
 
 ### DELETE object
 1. `ObjectStore` receives `DELETE <uuid>` request
-2. `ObjectStore` asks `KeyStore` to retrieve `ObjKey` and `Manifest`
+2. `ObjectStore` asks `KeyStore` to retrieve `ObjKey` including `Manifest`
 3. `ObjectStore` asks `FreeList` to release blocks according to `Manifest`
 4. <optional> `ObjectStore` asks `BlockStore` to zero blocks according to `Manifest`
+5. <optional> `Blockstore` writes zeros to `BlockDevice`
 
 # Roadmap
 [ ] Add free list B-tree

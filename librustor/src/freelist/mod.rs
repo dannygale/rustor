@@ -11,6 +11,9 @@
 pub mod vecfreelist;
 pub use vecfreelist::VecFreeList;
 
+pub mod rcvecfreelist;
+pub use rcvecfreelist::*;
+
 //use crate::object::Manifest;
 //use crate::RResult;
 
