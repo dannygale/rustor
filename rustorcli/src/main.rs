@@ -1,7 +1,10 @@
 use librustor::*;
+use librustor::object::ObjKey;
 use librustor::RResult;
 use librustor::objstore::BasicObjectStore;
 use librustor::blockstore::SingleDeviceBlockStore;
+use librustor::keystore::JsonKeystore;
+use librustor::freelist::RCVecFreeList;
 
 use std::path::PathBuf;
 use std::str;
@@ -58,30 +61,20 @@ fn main() -> RResult<()> {
 
     let size = 1024*1024;
     let mut bs = SingleDeviceBlockStore::new(PathBuf::from(objstore_file), size);
-    let mut fl = VecFreeList::new(size);
+    let mut fl = RCVecFreeList::new(size);
     let kg = keygen::KeyGen {};
-    let mut ks = keystore::JsonKeystore::new(PathBuf::from(keystore_file));
+    let mut ks: JsonKeystore<ObjKey> = keystore::JsonKeystore::new(PathBuf::from(keystore_file));
 
     // reconstruct free list from keystore
-    for obj in ks.keystore.values() {
-        
+    for obj in ks.get_objects().values() {
+        debug!("taking blocks for {:?}", &obj.uuid);
+        for block in obj.manifest.shards.iter() {
+            trace!("{:#?}", &fl.by_addr);
+            fl.take(block.span, block.lba)?;
+        }
     }
 
     let mut fs = BasicObjectStore::new(&mut bs, &mut fl, kg, &mut ks);
-
-    /*
-    let uuid = fs.put("asdfqwerty1234".as_bytes()).unwrap();
-    debug!("uuid: {}", uuid);
-
-    let data = fs.get(uuid).unwrap().unwrap();
-    debug!("get returned {} bytes: {}", data.len(), String::from_utf8(data).unwrap());
-
-    //fs.delete(uuid).unwrap();
-    //debug!("deleted {}", uuid);
-
-    let data = fs.get(uuid).unwrap().unwrap();
-    debug!("{:?}", data);
-    */
 
     if interactive { return interactive_loop(&mut fs); }
 
@@ -95,9 +88,16 @@ fn main() -> RResult<()> {
                     info!("uuid: {:?}", &uuid);
                 }
                 "get" => {
-
+                    let data = fs.get(Uuid::parse_str(matches.value_of("uuid").unwrap()).unwrap())?;
+                    //info!("data: {:?}", String::from_utf8(data.unwrap()));
                 }
                 "delete" => {
+
+                }
+                "keys" => { 
+
+                }
+                "objs" => {
 
                 }
                 _ => Err(format!("Unknown subcommand: {}", subcommand))?
@@ -147,6 +147,12 @@ fn interactive_loop(fs: &mut impl ObjectStore) -> RResult<()> {
                 let result = fs.delete(uuid);
                 debug!("{:?}", result);
             },
+            "keys" => {
+
+            },
+            "objs" => {
+
+            }
             /*
                "objects" => {
                let objects = fs.get_objects();

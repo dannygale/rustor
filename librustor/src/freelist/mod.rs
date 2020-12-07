@@ -1,4 +1,14 @@
 
+pub mod freelist;
+pub use freelist::*;
+
+pub mod vecfreelist;
+pub use vecfreelist::VecFreeList;
+
+pub mod rcvecfreelist;
+pub use rcvecfreelist::*;
+
+
 //pub mod avl;
 //pub use avl::*;
 
@@ -8,17 +18,8 @@
 //pub mod llfreelist;
 //pub use llfreelist::*;
 
-pub mod vecfreelist;
-pub use vecfreelist::VecFreeList;
-
-pub mod rcvecfreelist;
-pub use rcvecfreelist::*;
-
 //use crate::object::Manifest;
 //use crate::RResult;
-
-pub mod freelist;
-pub use freelist::*;
 
 /*
 #[derive(Debug, PartialEq)]

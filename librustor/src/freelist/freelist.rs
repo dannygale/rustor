@@ -15,6 +15,11 @@ impl FreeListNode {
         self.address >= other.address && self.address <= other.address + other.span ||
             other.address >= self.address && other.address <= self.address + self.span
     }
+
+    pub fn adjacent(&self, other:&Self) -> bool {
+        self.address + self.span == other.address ||
+            other.address + other.span == self.address
+    }
 }
 
 use std::rc::Rc;

@@ -43,3 +43,7 @@ subcommands:
             help: key to delete
             required: true
             index: 1
+  - keys:
+      about: list stored keys
+  - objs:
+      about: list keys and object data

@@ -11,58 +11,72 @@ use crate::blockstore::BS4K;
 
 #[derive(Debug)]
 pub struct RCVecFreeList {
-    by_size: Vec<Rc<RefCell<FreeListNode>>>,
-    by_addr: Vec<Rc<RefCell<FreeListNode>>>
+    pub by_size: Vec<Rc<RefCell<FreeListNode>>>,
+    pub by_addr: Vec<Rc<RefCell<FreeListNode>>>
 }
 
 impl RCVecFreeList {
     pub fn new(span:u64) -> Self {
-        let mut veclist = Self {
-            by_size: Vec::new(),
-            by_addr: Vec::new()
-        };
-
         let new_node = Rc::new(RefCell::new(FreeListNode { blkdevid: None, span, address: 0 }));
-        veclist.by_size.push(Rc::clone(&new_node));
-        veclist.by_addr.push(Rc::clone(&new_node));
-        veclist
+        Self {
+            by_size: vec![Rc::clone(&new_node)],
+            by_addr: vec![Rc::clone(&new_node)],
+        }
     }
 
-    fn insert_node(&mut self, node: FreeListNode) {
-        let rcnode = Rc::new(RefCell::new(node));
+    fn insert_node(&mut self, node: Rc<RefCell<FreeListNode>>) {
+        trace!("insert {:?}", &node);
         // insert the new node into the by_addr list
         let pos = self.by_addr.binary_search_by(
-            |node| node.borrow().address.cmp(&node.borrow().address))
+            |n| n.borrow().address.cmp(&node.borrow().address))
             .unwrap_or_else(|e| e);
-        self.by_addr.insert(pos, Rc::clone(&rcnode));
+        self.by_addr.insert(pos, Rc::clone(&node));
 
         // insert the new node into the by_size list, too
         let pos = self.by_size.binary_search_by(
-            |node| node.borrow().span.cmp(&node.borrow().span))
+            |n| n.borrow().span.cmp(&node.borrow().span))
             .unwrap_or_else(|e| e);
-        self.by_size.insert(pos, Rc::clone(&rcnode));
+        self.by_size.insert(pos, Rc::clone(&node));
     }
 
     fn remove_node(&mut self, node: &Rc<RefCell<FreeListNode>>) -> RResult<()> {
-        if let Ok(pos) = self.by_addr.binary_search_by(|n| node.borrow().address.cmp(&n.borrow().address)) {
+        debug!("remove node {:?}", node.borrow());
+        if let Ok(pos) = self.by_addr.binary_search_by(
+            |n| n.borrow().address.cmp(&node.borrow().address)) {
             self.by_addr.remove(pos);
         } else { return Err(format!("could not find node {:?}", node))?; }
 
-        if let Ok(pos) = self.by_size.binary_search_by(|n| node.borrow().span.cmp(&n.borrow().span)) {
+        for i in 0..self.by_size.len() {
+            if &self.by_size[i] == node {
+                self.by_size.remove(i);
+                break;
+            }
+        }
+
+        /*
+        if let Ok(pos) = self.by_size.binary_search_by(
+            |n| n.borrow().span.cmp(&node.borrow().span)) {
             self.by_size.remove(pos);
         } else { return Err(format!("could not find node {:?}", node))?; }
+        */
 
         Ok(())
     }
 
     fn find_node_containing(&self, lba:u64, span:u64) -> Option<&Rc<RefCell<FreeListNode>>> {
-        let pos = self.by_addr.binary_search_by(
+        trace!("looking for node containing {} at {}", &span, &lba);
+        let mut pos = self.by_addr.binary_search_by(
             |node| node.borrow().address.cmp(&node.borrow().address))
             .unwrap_or_else(|e| e);
+
+        trace!("pos {:?}, len {}", &pos, &self.by_addr.len());
+
+        if pos > 0 { pos -= 1; }
 
         let node = &self.by_addr[pos];
         let n = node.borrow();
 
+        trace!("found node {:?}", &n);
         if n.address <= lba && (n.address + n.span) >= (lba+span) {
             return Some(node);
         } else { return None; }
@@ -112,9 +126,8 @@ impl FreeList for RCVecFreeList {
             self.remove_node(&rcnode)?;
         }
 
-        let mut m = Manifest { shards: Vec::new() };
-        m.shards.push(ManifestLocation { lba: address as u64, span: span as u64, blkdevid: None });
-        return Ok(m);
+        return Ok( Manifest { shards: vec![ManifestLocation { 
+            lba: address as u64, span: span as u64, blkdevid: None }]});
     }
 
     fn release(&mut self, span:u64, address:u64) -> RResult<()> {
@@ -139,33 +152,50 @@ impl FreeList for RCVecFreeList {
     /// returns an error if the area specified by `lba` and `span` is not fully
     /// contianed in an existing node of the freelist
     fn take(&mut self, span:u64, lba: u64) -> RResult<()> {
+        debug!("take {} at {}", &span, &lba);
         if let Some(rcnode) = &mut self.find_node_containing(lba, span) {
-            // expect here that the target region is fully contained in n
-            // if lba == node.address, just shrink this node and return
+            // expect here that the target region is fully contained in rcnode
+            
             let node = Rc::clone(rcnode);
-            let mut n = node.borrow_mut();
-            if n.address == lba {
+            trace!("{} at {} contained in {:?}", &span, &lba, &node.borrow());
+
+            if node.borrow().address == lba {
+
+                let mut n = node.borrow_mut();
+                trace!("taking {} at base addr {}", &span, &n.address);
                 n.address += span;
                 n.span -= span;
+                trace!("now: {:?}", &n);
+                drop(n);
+
                 self.sort();
+                trace!("freelist: {:#?}", &self.by_addr);
+                if node.borrow().span == 0 { self.remove_node(&node)?; }
+                trace!("freelist: {:#?}", &self.by_addr);
+
                 return Ok(());
             }
 
             // otherwise we need to split this node
             // first create a new node at the top if needed, then reduce the size of the original
+            trace!("splitting {:?}", node.borrow());
             let new_node = FreeListNode {
                 blkdevid: None, 
                 address: lba+span, 
-                span: n.address+n.span - (lba+span)
+                span: node.borrow().address + node.borrow().span - (lba+span)
             };
-            self.insert_node(new_node);
+            trace!("new upper node {:?}", &new_node);
+            self.insert_node(Rc::new(RefCell::new(new_node)));
 
             // split this node
+            let mut n = node.borrow_mut();
             n.span = lba - n.address;
+            trace!("reduced original node {:?}", &n);
+            drop(n);
             self.sort_size();
 
         } else {
-            return Err(format!("Could not take {} blocks at address {}", &span, &lba))?;
+            return Err(format!("Could not find node spanning {} blocks at address {}", &span, &lba))?;
         }
         Ok(())
     }
@@ -175,8 +205,9 @@ impl FreeList for RCVecFreeList {
         let node = FreeListNode { blkdevid: None, address: lba, span: span };
 
         let pos = self.by_addr.binary_search_by(
-            |node| node.borrow().address.cmp(&node.borrow().address))
+            |n| n.borrow().address.cmp(&node.address))
             .unwrap_or_else(|e| e);
+
         if pos > 0 && node.overlaps(&self.by_addr[pos-1].borrow()) {
             return Err(format!("{} blocks at lba {} already free", span, lba))?;
         }
@@ -184,7 +215,7 @@ impl FreeList for RCVecFreeList {
             return Err(format!("{} blocks at lba {} already free", span, lba))?;
         }
 
-        self.insert_node(node);
+        self.insert_node(Rc::new(RefCell::new(node)));
         
         Ok(())
     }

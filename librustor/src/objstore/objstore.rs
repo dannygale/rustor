@@ -25,10 +25,12 @@ pub struct BasicObjectStore<'a> {
 
 
 impl<'a> BasicObjectStore<'a> {
-    pub fn new(blockstore: &'a mut dyn BlockStore, 
+    pub fn new(
+        blockstore: &'a mut dyn BlockStore, 
         freelist: &'a mut dyn FreeList,
         keygen: KeyGen,
-        keystore: &'a mut dyn KeyStore<ObjKey>) -> Self {
+        keystore: &'a mut dyn KeyStore<ObjKey>
+        ) -> Self {
         Self { blockstore, freelist, keygen, keystore }
     }
 }
@@ -56,8 +58,14 @@ impl ObjectStore for BasicObjectStore<'_> {
 
     #[allow(unused_variables)]
     fn delete(&mut self, uuid: ObjectID) -> RResult<Option<ObjectID>> {
-
-        Ok(None)
+        if let Some(key) = self.keystore.get(&uuid)? {
+            for block in key.manifest.shards.iter() {
+                self.freelist.release(block.span, block.lba)?;
+            }
+            return Ok(Some(uuid));
+        } else {
+            return Ok(None);
+        }
     }
 }
 

@@ -8,7 +8,7 @@ pub mod keygen;
 
 //pub use objstore::filestore::FileStore;
 pub use objstore::objstore::{ObjectStore};
-pub use blockstore::{BlockStore, BlockDevice};
+pub use blockstore::{BlockStore, BlockDevice, BS4K};
 //use keystore::keystore::SQLiteKeyStore;
 
 pub use freelist::*;
