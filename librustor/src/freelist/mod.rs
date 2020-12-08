@@ -8,6 +8,9 @@ pub use vecfreelist::VecFreeList;
 pub mod rcvecfreelist;
 pub use rcvecfreelist::*;
 
+pub mod bitmap_freelist;
+pub use bitmap_freelist::*;
+
 
 //pub mod avl;
 //pub use avl::*;

@@ -229,10 +229,12 @@ mod tests {
 
     #[test]
     fn test_allocate() {
-        let mut list = VecFreeList::new(1000);
+        let mut list = RCVecFreeList::new(1000);
         
         // test empty list
-        assert_eq!(list.free[0], FreeListNode {size: 1000, address: 0});
+        let node = FreeListNode { blkdevid: None, span: 1000, address: 0};
+        assert_eq!(list.by_addr[0], node);
+        assert_eq!(list.by_addr[0], node);
 
         // test allocate into empty list
         let address = list.allocate(10).unwrap();
