@@ -130,20 +130,25 @@ impl FreeList for RCVecFreeList {
             lba: address as u64, span: span as u64, blkdevid: None }]});
     }
 
-    fn release(&mut self, span:u64, address:u64) -> RResult<()> {
-        debug!("Releasing {} blocks at {}", span, address);
+    fn release(&mut self, manifest: &Manifest) -> RResult<()> {
         // TODO: check if the area being freed is already free
         // TODO: check if the area being released overlaps a free area
         // TODO: check if the area being released is outside of max size
         // TODO: check if we're adjacent to another free area and combine
 
-        let index = match self.by_addr.binary_search_by(|node| node.borrow().span.cmp(&span)) {
-            Ok(idx) => idx,
-            Err(idx) => idx, // this is fine, it just means this will be the largest free block
-        };
-        trace!("index: {}", index);
+        for loc in manifest.shards.iter() {
+            let span = loc.span;
+            let address = loc.lba;
+                debug!("Releasing {} blocks at {}", span, address);
+                let index = match self.by_addr.binary_search_by(|node| node.borrow().span.cmp(&span)) {
+                    Ok(idx) => idx,
+                    Err(idx) => idx, // this is fine, it just means this will be the largest free block
+                };
+            trace!("index: {}", index);
 
-        self.free(span, address)?;
+            self.free(span, address)?;
+
+        }
 
         Ok(())
     }

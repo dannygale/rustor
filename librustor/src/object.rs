@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 pub type ObjectID = Uuid;
 pub type BlkDevID = Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct ManifestLocation {
     pub blkdevid: Option<BlkDevID>,
     /// starting LBA
@@ -19,6 +19,14 @@ pub struct ManifestLocation {
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Manifest {
     pub shards: Vec<ManifestLocation>,
+}
+
+impl Manifest {
+    pub fn new() -> Self {
+        Self {
+            shards: Vec::new()
+        }
+    }
 }
 
 impl Clone for Manifest {

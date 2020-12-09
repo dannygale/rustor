@@ -16,7 +16,7 @@ pub struct Bitmap {
     size: usize,
 }
 
-trait BitOps {
+pub trait BitOps {
     fn get(&self, i: usize) -> bool;
     fn set(&mut self, i: usize);
     fn clear(&mut self, i: usize);
@@ -35,6 +35,32 @@ impl Bitmap {
             words: vec![0; words],
             size: size,
         }
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.size
+    }
+
+    pub fn set_all(&mut self) {
+        for w in self.words.iter_mut() {
+            *w = usize::MAX;
+        }
+    }
+
+    pub fn zeros(&self) -> BitmapIterVal {
+        BitmapIterVal::new(self, false)
+    }
+
+    pub fn ones(&self) -> BitmapIterVal {
+        BitmapIterVal::new(self, true)
+    }
+
+    pub fn zeros_mut(&mut self) -> BitmapIterVal {
+        BitmapIterVal::new(self, false)
+    }
+
+    pub fn ones_mut(&mut self) -> BitmapIterVal {
+        BitmapIterVal::new(self, true)
     }
 }
 
@@ -106,13 +132,19 @@ impl<'a> Iterator for BitmapIter<'a> {
 }
 
 /// iterate over the indices of all the zeros or all the ones
-pub struct BitmapIterVal {
-    bitmap: Bitmap,
+pub struct BitmapIterVal<'a> {
+    bitmap: &'a Bitmap,
     index: usize,
     value: bool
 }
 
-impl Iterator for BitmapIterVal {
+impl<'a> BitmapIterVal<'a> {
+    pub fn new(bitmap: &'a Bitmap, val: bool) -> Self {
+        Self { bitmap, index: 0, value: val }
+    }
+}
+
+impl<'a> Iterator for BitmapIterVal<'a> {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -206,7 +238,6 @@ mod test {
             b.clear(bit);
             assert_eq!(b.words[wordnum], orig & !(1 << index(bit)));
         }
-
     }
 
     #[test]
@@ -228,6 +259,8 @@ mod test {
         }
         assert_eq!(bits, size);
         assert_eq!(ones, words);
+
+        assert_eq!(ones, words)
     }
 }
 

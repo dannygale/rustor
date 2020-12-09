@@ -8,8 +8,10 @@ pub use vecfreelist::VecFreeList;
 pub mod rcvecfreelist;
 pub use rcvecfreelist::*;
 
-pub mod bitmap_freelist;
-pub use bitmap_freelist::*;
+mod bitmap;
+
+pub mod bitmapfreelist;
+pub use bitmapfreelist::*;
 
 
 //pub mod avl;

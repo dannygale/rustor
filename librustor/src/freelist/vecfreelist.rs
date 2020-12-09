@@ -58,25 +58,31 @@ impl FreeList for VecFreeList {
         return Ok(m);
     }
 
-    fn release(&mut self, span:u64, address:u64) -> RResult<()> {
-        debug!("Releasing {} blocks at {}", span, address);
+    fn release(&mut self, manifest: &Manifest) -> RResult<()> {
         // TODO: check if the area being freed is already free
         // TODO: check if the area being released overlaps a free area
         // TODO: check if the area being released is outside of max size
         // TODO: check if we're adjacent to another free area and combine
 
-        let index = match self.free.binary_search_by(|node| node.span.cmp(&span)) {
-            Ok(idx) => idx,
-            Err(idx) => idx, // this is fine, it just means this will be the largest free block
-        };
-        trace!("index: {}", index);
+        for loc in manifest.shards.iter() {
+            let span = loc.span;
+            let lba = loc.lba;
+            debug!("Releasing {} blocks at {}", span, lba);
+            let index = match self.free.binary_search_by(|node| node.span.cmp(&span)) {
+                Ok(idx) => idx,
+                Err(idx) => idx, // this is fine, it just means this will be the largest free block
+            };
+            trace!("index: {}", index);
 
-        self.free.insert(index, FreeListNode { blkdevid: None, span, address });
+            self.free.insert(index, FreeListNode { blkdevid: None, span, address: lba });
+
+        }
 
         Ok(())
     }
 
 
+    #[allow(unused_variables)]
     fn take(&mut self, span:u64, lba: u64) -> RResult<()> {
         let index = match self.free.binary_search_by(|node| node.span.cmp(&span)) {
             Ok(idx) => idx,
@@ -101,6 +107,8 @@ impl FreeList for VecFreeList {
 
         Ok(())
     }
+
+    #[allow(unused_variables)]
     fn free(&mut self, span:u64, lba: u64) -> RResult<()> {
         // 
         Ok(())
@@ -110,10 +118,8 @@ impl FreeList for VecFreeList {
 use crate::freelist::FreeListFromKeys;
 use crate::object::ObjKey;
 impl FreeListFromKeys for VecFreeList {
+    #[allow(unused_variables)]
     fn from_keys<'a, I>(&mut self, keys: I) -> RResult<()> where I: Iterator<Item=&'a ObjKey> {
-        for key in keys {
-
-        }
 
         Ok(())
     }

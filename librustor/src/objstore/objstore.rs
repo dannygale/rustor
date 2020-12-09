@@ -59,9 +59,7 @@ impl ObjectStore for BasicObjectStore<'_> {
     #[allow(unused_variables)]
     fn delete(&mut self, uuid: ObjectID) -> RResult<Option<ObjectID>> {
         if let Some(key) = self.keystore.get(&uuid)? {
-            for block in key.manifest.shards.iter() {
-                self.freelist.release(block.span, block.lba)?;
-            }
+            self.freelist.release(&key.manifest);
             return Ok(Some(uuid));
         } else {
             return Ok(None);
