@@ -4,7 +4,7 @@ use librustor::RResult;
 use librustor::objstore::BasicObjectStore;
 use librustor::blockstore::SingleDeviceBlockStore;
 use librustor::keystore::JsonKeystore;
-use librustor::freelist::RCVecFreeList;
+use librustor::freelist::BitmapFreelist;
 
 use std::path::PathBuf;
 use std::str;
@@ -22,8 +22,6 @@ use log;
 #[allow(unused_imports)]
 use log::{trace, debug, info, warn, error};
 use env_logger;
-
-
 
 fn main() -> RResult<()> {
 
@@ -61,7 +59,7 @@ fn main() -> RResult<()> {
 
     let size = 1024*1024;
     let mut bs = SingleDeviceBlockStore::new(PathBuf::from(objstore_file), size);
-    let mut fl = RCVecFreeList::new(size);
+    let mut fl = BitmapFreelist::new(size as usize);
     let kg = keygen::KeyGen {};
     let mut ks: JsonKeystore<ObjKey> = keystore::JsonKeystore::new(PathBuf::from(keystore_file));
 
@@ -69,7 +67,6 @@ fn main() -> RResult<()> {
     for obj in ks.get_objects().values() {
         debug!("taking blocks for {:?}", &obj.uuid);
         for block in obj.manifest.shards.iter() {
-            trace!("{:#?}", &fl.by_addr);
             fl.take(block.span, block.lba)?;
         }
     }
@@ -88,8 +85,14 @@ fn main() -> RResult<()> {
                     info!("uuid: {:?}", &uuid);
                 }
                 "get" => {
-                    let data = fs.get(Uuid::parse_str(matches.value_of("uuid").unwrap()).unwrap())?;
-                    //info!("data: {:?}", String::from_utf8(data.unwrap()));
+                    let id = Uuid::parse_str(matches.value_of("uuid").unwrap())?;
+                    trace!("got id: {:?}", &id);
+
+                    if let Some(data) = fs.get(id)? {
+                        info!("retrieved data: {:?}", &data);
+                    } else {
+                        warn!("Could not retrieve data for {:?}", &id);
+                    }
                 }
                 "delete" => {
 

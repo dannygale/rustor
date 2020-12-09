@@ -32,15 +32,15 @@ subcommands:
   - get:
       about: retrieve an object by key
       args:
-        - key:
-            help: Key to retrieve
+        - uuid:
+            help: uuid to retrieve
             required: true
             index: 1
   - delete: 
-      about: delete a key/object pair
+      about: delete a uuid/object pair
       args:
-        - key:
-            help: key to delete
+        - uuid:
+            help: uuid to delete
             required: true
             index: 1
   - keys:

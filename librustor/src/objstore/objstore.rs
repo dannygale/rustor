@@ -7,6 +7,9 @@ use crate::keystore::KeyStore;
 use crate::keygen::{KeyGen, GeneratesKeys};
 use crate::freelist::{ FreeList}; //, VecFreeList };
 
+#[allow(unused_imports)]
+use log::{trace, debug, info, warn, error};
+
 pub type ObjectID = Uuid;
 
 /// An ObjectStore is the top-level interface to put, get, or delete stored data
@@ -47,8 +50,10 @@ impl ObjectStore for BasicObjectStore<'_> {
     }
 
     fn get(&mut self, uuid: ObjectID) -> RResult<Option<Vec<u8>>> {
+        trace!("get {:?}", &uuid);
         if let Some(key) = self.keystore.get(&uuid)? {
-            let mut data = Vec::new();
+            trace!("found key: {:?}", &key);
+            let mut data = Vec::with_capacity(key.size as usize);
             self.blockstore.read(&mut data, &key)?;
             return Ok(Some(data));
         } else {
